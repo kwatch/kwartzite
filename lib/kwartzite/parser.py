@@ -6,38 +6,16 @@
 
 import re
 import config
-from util import isword, quote
+from util import isword
+from __init__ import BaseError
 
 
 
-class Parser(object):
-
-
-    def parse(self, input, filename=None):
-        raise NotImplementedError("%s#parser() is not implemented." % self.__class__.__name__)
-
-
-    def parse_file(self, filename):
-        input = open(filename).read()
-        return self.parse(input, filename)
-
-
-
-class ParsedData(object):
-
-
-    def __init__(self, stmt_list, elem_info_table, filename=None):
-        self.stmt_list       = stmt_list
-        self.elem_info_table = elem_info_table
-        self.filename        = filename
-
-
-
-class ParseError(StandardError):
+class ParseError(BaseError):
 
 
     def __init__(self, message, filename=None, linenum=None, column=None):
-        StandardError.__init__(self, message)
+        BaseError.__init__(self, message)
         self.filename = filename
         self.linenum = linenum
         self.column = column
@@ -167,7 +145,7 @@ class ElementInfo(object):
 
 
 
-class NativeExpression(object):
+class Expression(object):
 
 
     def __init__(self, code_str):
@@ -187,15 +165,44 @@ class Directive(object):
 
 
 
-##
-## convert presentation data (html) into a list of Statement.
-## notice that TextConverter class hanlde html file as text format, not html format.
-##
+class TemplateInfo(object):
+
+
+    def __init__(self, stmt_list, elem_info_table, filename=None):
+        self.stmt_list       = stmt_list
+        self.elem_info_table = elem_info_table
+        self.filename        = filename
+
+
+
+class Parser(object):
+
+
+    def __init__(self, **properties):
+        self.properties = properties
+
+
+    def parse(self, input, filename=None, **kwargs):
+        """parse input string and return TemplateInfo object."""
+        raise NotImplementedError("%s#parser() is not implemented." % self.__class__.__name__)
+
+
+    def parse_file(self, filename, **kwargs):
+        """parse template file and return TemplateInfo object."""
+        input = open(filename).read()
+        return self.parse(input, filename, **kwargs)
+
+
+
 class TextParser(Parser):
+    """
+    convert presentation data (html) into a list of Statement.
+    notice that TextConverter class hanlde html file as text format, not html format.
+    """
 
 
-    def __init__(self, dattr=None, encoding=None, idflag=None, delspan=None, escape=None, **kwargs):
-        Parser.__init__(self)
+    def __init__(self, dattr=None, encoding=None, idflag=None, delspan=None, escape=None, **properties):
+        Parser.__init__(self, **properties)
         self.filename = None
         self.dattr    = dattr    is not None and dattr    or config.DATTR
         self.encoding = encoding is not None and encoding or config.ENCODING
@@ -245,7 +252,7 @@ class TextParser(Parser):
         self._reset(input, filename)
         stmt_list = []
         self._parse(stmt_list)
-        return ParsedData(stmt_list, self.elem_info_table, filename)
+        return TemplateInfo(stmt_list, self.elem_info_table, filename)
 
 
     def _parse(self, stmt_list, start_tag_info=None):
@@ -399,7 +406,7 @@ class TextParser(Parser):
     def _handle_directive_value(self, directive, elem_info, stmt_list):
         code = directive.arg
         stmt_list.append(elem_info.stag_info.tag_text)
-        stmt_list.append(NativeExpression(code))
+        stmt_list.append(Expression(code))
         stmt_list.append(elem_info.etag_info.tag_text)
 
 
@@ -471,293 +478,3 @@ class OrderedDict(dict):
 
 
 
-import os
-
-def q(string):
-    s = quote(string)
-    if s.endswith("\r\n"):
-        return s[0:-2] + "\\r\\n"
-    if s.endswith("\n"):
-        return s[0:-1] + "\\n"
-    return s
-
-
-
-class Translator(object):
-
-
-    def __init__(self, encoding=None, **properties):
-        self.encoding = encoding
-        self.properties = properties
-
-
-    def translate(self, parsed_data, **kwargs):
-        raise NotImplementedError("%s#translate() is not implemented." % self.__class__.__name__)
-
-
-
-class PythonTranslator(Translator):
-
-
-    def translate(self, parsed_data, filename=None, classname=None, parent=None, encoding=None, **kwargs):
-        if filename is None:
-            filename = parsed_data.filename
-        if classname is None:
-            classname = self.build_classname(filename, **kwargs)
-        if parent is None:
-            parent = self.properties.get('parent', 'object')
-        if encoding is None:
-            encoding = self.encoding
-        return self.generate_code(parsed_data, filename=filename, classname=classname, parent=parent, encoding=encoding, **kwargs)
-
-
-    def build_classname(self, filename, prefix=None, postfix=None, **kwargs):
-        s = os.path.basename(filename)
-        #pos = s.rindex('.')
-        #if pos > 0: s = s[0:pos]
-        s = re.sub(r'[^\w]', '_', s)
-        if not prefix:  prefix  = self.properties.get('prefix')
-        if not postfix: postfix = self.properties.get('postfix')
-        if prefix:  s = prefix + s
-        if postfix: s = s + postfix
-        classname = s
-        return classname
-
-
-    def generate_code(self, parsed_data, filename=None, classname=None, parent=None, encoding=None, **properties):
-        stmt_list       = parsed_data.stmt_list
-        elem_info_table = parsed_data.elem_info_table
-        buf = []
-        if encoding:
-            buf.extend(('# -*- coding: ', encoding, " -*-\n", ))
-        if filename:
-            buf.extend(('## generated from ', filename, '\n', ))
-        buf.extend((
-            '\n'
-            'from kwartzite.attribute import Attribute\n',
-            ))
-        if encoding:
-            buf.extend((
-            'from kwartzite.util import escape_xml, generate_tostrfunc\n'
-            'to_str = generate_tostrfunc(', repr(encoding), ')\n'
-            ))
-        else:
-            buf.extend((
-            'from kwartzite.util import escape_xml, to_str\n'
-            ))
-        buf.extend((
-            'h = escape_xml\n'
-            "__all__ = ['", classname, "', 'escape_xml', 'to_str', 'h', ]\n"
-            '\n'
-            'class ', classname, '(', parent, '):\n'
-            '\n'
-            '    def __init__(self, **_context):\n'
-            '        for k, v in _context.iteritems():\n'
-            '            setattr(self, k, v)\n'
-            '        self._context = _context\n'
-            '        self._buf = []\n'
-            ))
-        for name, elem_info in elem_info_table.iteritems():
-            buf.extend(('        self.init_', name, '()\n', ))
-        buf.extend((
-            '\n'
-            '    def create_document(self):\n'
-            '        _buf = self._buf\n'
-            ))
-        self.expand_items(buf, stmt_list)
-        buf.extend((
-            "        return ''.join(_buf)\n"
-            "\n",
-            ))
-        for name, elem_info in elem_info_table.iteritems():
-            buf.extend(("    ## element '", name, "'\n\n", ))
-            self.expand_init(buf, elem_info); buf.append("\n")
-            self.expand_elem(buf, elem_info); buf.append("\n")
-            self.expand_stag(buf, elem_info); buf.append("\n")
-            self.expand_cont(buf, elem_info); buf.append("\n")
-            self.expand_etag(buf, elem_info); buf.append("\n")
-            buf.extend((
-            "    _init_", name, " = init_", name, "\n"
-            "    _elem_", name, " = elem_", name, "\n"
-            "    _stag_", name, " = stag_", name, "\n"
-            "    _cont_", name, " = cont_", name, "\n"
-            "    _etag_", name, " = etag_", name, "\n"
-            "\n",
-            ))
-        #buf.extend((
-        #    "\n"
-        #    "class ", classname, "(", classname, "_):\n"
-        #    "    pass\n"
-        #    "\n",
-        #    ))
-        return ''.join(buf)
-
-
-    def expand_items(self, buf, stmt_list):
-        pos = 0
-        i = -1
-        for item in stmt_list:
-            i += 1
-            if isinstance(item, (str, unicode)):
-                pass
-            else:
-                if pos < i:
-                    buf.extend(("        _buf.append('''",
-                                q(''.join(stmt_list[pos:i])),
-                                "''')\n", ))
-                pos = i + 1
-                if isinstance(item, ElementInfo):
-                    elem_info = item
-                    buf.extend(("        self.elem_", elem_info.name, "()\n", ))
-                elif isinstance(item, NativeExpression):
-                    native_expr = item
-                    buf.extend(("        _buf.append(to_str(", native_expr.code, "))\n", ))
-                else:
-                    assert "** unreachable"
-        if pos <= i:
-            buf.extend(("        _buf.append('''",
-                       q(''.join(stmt_list[pos:])),
-                       "''')\n", ))
-
-
-    def expand_init(self, buf, elem_info):
-        name = elem_info.name
-        buf.extend(("    def init_", name, "(self):\n", ))
-        ## text_xxx
-        if elem_info.cont_text_p():
-            s = elem_info.cont_stmts[0]
-            buf.extend(("        self.text_", name, " = '''", q(s), "'''\n", ))
-        ## attr_xxx
-        buf.extend(('        self.attr_', name, ' = Attribute', ))
-        attr_info = elem_info.attr_info
-        if attr_info.is_empty():
-            buf.append('()\n')
-        else:
-            buf.append('((\n')
-            for space, aname, avalue in attr_info:
-                if isinstance(avalue, NativeExpression):
-                    s = "'''<"+q(avalue.code)+">'''"
-                else:
-                    s = repr(avalue)
-                buf.extend(("            ('", aname, "',", s, "),\n", ))
-            buf.append('        ))\n')
-
-
-    def expand_elem(self, buf, elem_info):
-        name = elem_info.name
-        buf.extend((
-            '    def elem_', name, '(self):\n'
-            '        self.stag_', name, '()\n'
-            '        self.cont_', name, '()\n'
-            '        self.etag_', name, '()\n'
-            ))
-
-
-    def expand_stag(self, buf, elem_info):
-        name = elem_info.name
-        stag = elem_info.stag_info
-        buf.extend((
-            "    def stag_", name, "(self):\n",
-            ))
-        if stag.tagname:
-            buf.extend((
-            "        _buf = self._buf\n"
-            "        _buf.append('''", stag.head_space or "", "<", stag.tagname, "''')\n"
-            "        self.attr_", name, ".append_to(_buf)\n"
-            "        _buf.append('''", stag.extra_space or "", stag.is_empty and "/>" or ">", q(stag.tail_space or ""), "''')\n",
-            ))
-        else:
-            s = (stag.head_space or '') + (stag.tail_space or '')
-            if s:
-                buf.extend(("        self._buf.append('", s, "')\n", ))
-            else:
-                buf.append("        pass\n")
-
-
-    def expand_cont(self, buf, elem_info):
-        name = elem_info.name
-        buf.extend((    '    def cont_', name, '(self):\n', ))
-        if elem_info.cont_text_p():
-            buf.extend(('        self._buf.append(to_str(self.text_', name, '))\n', ))
-        elif elem_info.cont_stmts:
-            buf.extend(('        _buf = self._buf\n', ))
-            self.expand_items(buf, elem_info.cont_stmts)
-        else:
-            buf.extend(('        pass\n', ))
-
-
-    def expand_etag(self, buf, elem_info):
-        name = elem_info.name
-        etag = elem_info.etag_info
-        buf.extend((
-            "    def etag_", name, "(self):\n",
-            ))
-        if not etag:
-            buf.extend((
-            "        pass\n"
-            ))
-        elif etag.tagname:
-            buf.extend((
-            "        _buf = self._buf\n"
-            "        _buf.append('''", etag.head_space or "", "</", etag.tagname,
-                                 ">", q(etag.tail_space or ""), "''')\n",
-            ))
-        else:
-            s = (etag.head_space or '') + (etag.tail_space or '')
-            if s:
-                buf.extend(("        self._buf.append('", q(s), "')\n", ))
-            else:
-                buf.append("        pass\n")
-
-
-
-class Main(object):
-
-
-    def __init__(self, sys_argv=None):
-        if sys_argv is None:
-            sys_argv = sys.argv[:]
-        self.command = os.path.basename(sys_argv[0])
-        self.args = sys_argv[1:]
-
-
-    def execute(self, args=None):
-        if args is None:
-            args = self.args
-        parser = Parser()
-        translatr = PythonTranslator()
-        for arg in args:
-            filename = arg
-            parsed_data = parser.parse_file(filename)
-            code = translator.translate(parsed_data, filename=filename)
-            print code,
-
-
-if __name__ == '__main__':
-
-    import sys, os
-    #input = sys.stdin.read()
-    input = """\
-<html>
-<h1 id="Title">TITLE</h1>
-<h2 id="subtitle">SUBTITLE</h2>
-<p>hello <span>world</span></p>
-<ul id="mark:list">
-  <li><span id="mark:item" class="c1">foo</span></li>
-</ul>
-<dl id="mark:bibliography">
-  <dt id="value:item.word">word</dt>
-  <dd id="value:item.desc">desc</dd>
-</dl>
-</html>
-"""
-    filename = 'template1.html'
-    input = open(filename).read()
-    parser = TextParser(idflag='all')
-    parsed_data = parser.parse(input, filename)
-    #print repr(stmt_list)
-    #for name, elem_info in parser.elem_info_table.iteritems():
-    #    print "%s=%s,%s" % (name, repr(elem_info.stag_info.tag_text), repr(elem_info.etag_info.tag_text))
-    translator = PythonTranslator()
-    code = translator.translate(parsed_data)
-    print code,

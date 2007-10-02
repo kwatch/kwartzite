@@ -1,0 +1,13 @@
+.=document:	ChangeLog
+.?lastupdate:	$Date$
+.?version:	$Rev$
+
+: rev.2 (2007-10-02)
+	.- [enhance] add 'translator.py'
+	.- [enhance] add 'main.py'
+	.- [enhance] add 'bin/pysio2'
+	.- [enhance] support '-a names'
+	.- [enhance] add ChangeLog.txt
+
+: rev.1 (2007-10-02)
+	.- [enhance] add parser.py, attribute.py, config.py, util.py

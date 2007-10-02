@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+###
+### $Rev$
+### $Release$
+### $Copyright$
+###
+
+
+import kwartzite.main
+kwartzite.main.main()
