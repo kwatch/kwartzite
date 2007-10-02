@@ -2,6 +2,10 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.3 (2007-10-02)
+	.- [change] 'parser.py' is splitted into to 'parser/__init__.py' and 'parser/TextParser.py'
+	.- [change] 'translator.py' is splitted into 'translator/__init__.py' and 'translator/PythonTranslator.py'
+
 : rev.2 (2007-10-02)
 	.- [enhance] add 'translator.py'
 	.- [enhance] add 'main.py'

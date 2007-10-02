@@ -4,10 +4,12 @@
 ### $Copyright$
 ###
 
+
 import os, re
 #import config
-from util import quote
-from parser import ElementInfo, Expression
+from kwartzite.util import quote
+from kwartzite.parser.TextParser import ElementInfo, Expression
+from kwartzite.translator import Translator
 
 
 
@@ -18,20 +20,6 @@ def q(string):
     if s.endswith("\n"):
         return s[0:-1] + "\\n"
     return s
-
-
-
-class Translator(object):
-
-
-    def __init__(self, encoding=None, **properties):
-        self.encoding = encoding
-        self.properties = properties
-
-
-    def translate(self, template_info, **kwargs):
-        """translate TemplateInfo into class definition."""
-        raise NotImplementedError("%s#translate() is not implemented." % self.__class__.__name__)
 
 
 

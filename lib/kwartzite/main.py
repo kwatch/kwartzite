@@ -8,8 +8,10 @@
 import sys, os, re
 import kwartzite
 import kwartzite.config as config
-from kwartzite.parser import Parser, TextParser
-from kwartzite.translator import Translator, PythonTranslator
+from kwartzite.parser import Parser
+from kwartzite.parser.TextParser import TextParser
+from kwartzite.translator import Translator
+from kwartzite.translator.PythonTranslator import PythonTranslator
 
 
 

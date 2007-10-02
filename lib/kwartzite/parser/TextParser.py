@@ -4,26 +4,11 @@
 ### $Copyright$
 ###
 
+
 import re
-import config
-from util import isword
-from __init__ import BaseError
-
-
-
-class ParseError(BaseError):
-
-
-    def __init__(self, message, filename=None, linenum=None, column=None):
-        BaseError.__init__(self, message)
-        self.filename = filename
-        self.linenum = linenum
-        self.column = column
-
-
-    def to_string(self):
-        "%s:%s:%s: %s: %s" % (self.filename, self.linenum, self.column,
-                              self.__class__.__name__, self.message)
+import kwartzite.config as config
+from kwartzite.util import isword, OrderedDict
+from kwartzite.parser import Parser, ParseError, TemplateInfo
 
 
 
@@ -162,35 +147,6 @@ class Directive(object):
         self.attr_name  = attr_name
         self.attr_value = attr_value
         self.linenum    = linenum
-
-
-
-class TemplateInfo(object):
-
-
-    def __init__(self, stmt_list, elem_info_table, filename=None):
-        self.stmt_list       = stmt_list
-        self.elem_info_table = elem_info_table
-        self.filename        = filename
-
-
-
-class Parser(object):
-
-
-    def __init__(self, **properties):
-        self.properties = properties
-
-
-    def parse(self, input, filename=None, **kwargs):
-        """parse input string and return TemplateInfo object."""
-        raise NotImplementedError("%s#parser() is not implemented." % self.__class__.__name__)
-
-
-    def parse_file(self, filename, **kwargs):
-        """parse template file and return TemplateInfo object."""
-        input = open(filename).read()
-        return self.parse(input, filename, **kwargs)
 
 
 
@@ -412,69 +368,4 @@ class TextParser(Parser):
 
     def _handle_directive_dummy(self, directive, elem_info, stmt_list):
         pass   # ignore element
-
-
-
-class OrderedDict(dict):
-
-
-    def __init__(self, *args):
-        dict.__init__(self, *args)
-        self._keys = []
-
-
-    def __setitem__(self, key, value):
-        if self.has_key(key):
-            self._keys.remove(key)
-        self._keys.append(key)
-        return dict.__setitem__(self, key, value)
-
-
-    def keys(self):
-        return self._keys[:]
-
-
-    def __iter__(self):
-        return self._keys.__iter__()
-
-
-    def iteritems(self):
-        return [ (k, self[k]) for k in self._keys ].__iter__()
-
-
-    def __delitem__(self, key):
-        if self.has_key(key):
-            self._keys.remove(key)
-        return dict.__delitem__(self, key)
-
-
-    def clear(self):
-        self._keys = []
-        dict.clear(self)
-
-
-    def copy(self):
-        new = dict.copy(self)
-        new._keys = self._keys[:]
-        return new
-
-
-    def pop(self, key):
-        if self.has_key(key):
-            self._keys.remove(key)
-        return dict.pop(self, key)
-
-
-    def popitem(self, key):
-        if self.has_key(key):
-            self._keys.remove(key)
-        return dict.pop(self, key)
-
-
-    def update(self, other):
-        if other:
-            for key, val in other.iteritems():
-                self[key] = value
-
-
 

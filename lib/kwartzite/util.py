@@ -56,3 +56,66 @@ _isword_pattern = re.compile('^\w+$')
 
 def isword(s):
     return bool(_isword_pattern.match(s))
+
+
+
+class OrderedDict(dict):
+
+
+    def __init__(self, *args):
+        dict.__init__(self, *args)
+        self._keys = []
+
+
+    def __setitem__(self, key, value):
+        if self.has_key(key):
+            self._keys.remove(key)
+        self._keys.append(key)
+        return dict.__setitem__(self, key, value)
+
+
+    def keys(self):
+        return self._keys[:]
+
+
+    def __iter__(self):
+        return self._keys.__iter__()
+
+
+    def iteritems(self):
+        return [ (k, self[k]) for k in self._keys ].__iter__()
+
+
+    def __delitem__(self, key):
+        if self.has_key(key):
+            self._keys.remove(key)
+        return dict.__delitem__(self, key)
+
+
+    def clear(self):
+        self._keys = []
+        dict.clear(self)
+
+
+    def copy(self):
+        new = dict.copy(self)
+        new._keys = self._keys[:]
+        return new
+
+
+    def pop(self, key):
+        if self.has_key(key):
+            self._keys.remove(key)
+        return dict.pop(self, key)
+
+
+    def popitem(self, key):
+        if self.has_key(key):
+            self._keys.remove(key)
+        return dict.pop(self, key)
+
+
+    def update(self, other):
+        if other:
+            for key, val in other.iteritems():
+                self[key] = value
