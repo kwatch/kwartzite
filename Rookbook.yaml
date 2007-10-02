@@ -1,0 +1,21 @@
+properties:
+
+  - script:	lib/kwartzite/parser.py
+  - base:	'template1'
+
+
+recipes:
+
+  - product:	:exec
+    ingreds:	[ $(base).py, $(base)_html.py ]
+    method*: |
+	sys "python #{@ingred} | tee outout.log"
+
+  - product:	:clean
+    method*: |
+	rm_rf "$(base)_html.py*"
+
+  - product:	*_html.py
+    ingreds:	[ $(1).html, $(script) ]
+    method*: |
+	sys "python $(script) #{@ingred} > #{@product}"
