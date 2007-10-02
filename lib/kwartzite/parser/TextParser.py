@@ -124,9 +124,16 @@ class ElementInfo(object):
         self.attr_info    = attr_info      # AttrInfo
         self.name = None
 
+
     def cont_text_p(self):
-        L = self.cont_stmts
-        return L and len(L) == 1 and isinstance(L[0], (str, unicode))
+        #L = self.cont_stmts
+        #return L and len(L) == 1 and isinstance(L[0], (str, unicode))
+        if not self.cont_stmts:
+            return False
+        for item in self.cont_stmts:
+            if not isinstance(item, (str, unicode)):
+                return False
+        return True
 
 
 

@@ -2,6 +2,12 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.4 (2007-10-02)
+	.- [change] rename argument 'parent' of PythonTranslator#translate() into 'baseclass'
+	.- [enhance] add JavaTranslator
+	.- [enhance] support property 'mainprog' in PythonTranslator and JavaTranslator
+	.- [bugfix] main.py had tried to create output file on root dir when '-o' was specified
+
 : rev.3 (2007-10-02)
 	.- [change] 'parser.py' is splitted into to 'parser/__init__.py' and 'parser/TextParser.py'
 	.- [change] 'translator.py' is splitted into 'translator/__init__.py' and 'translator/PythonTranslator.py'

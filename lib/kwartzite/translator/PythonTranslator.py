@@ -26,16 +26,18 @@ def q(string):
 class PythonTranslator(Translator):
 
 
-    def translate(self, template_info, filename=None, classname=None, parent=None, encoding=None, **kwargs):
+    def translate(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, **kwargs):
         if filename is None:
             filename = template_info.filename
         if classname is None:
             classname = self.build_classname(filename, **kwargs)
-        if parent is None:
-            parent = self.properties.get('parent', 'object')
+        if baseclass is None:
+            baseclass = self.properties.get('baseclass', 'object')
         if encoding is None:
             encoding = self.encoding
-        return self.generate_code(template_info, filename=filename, classname=classname, parent=parent, encoding=encoding, **kwargs)
+        if mainprog is None:
+            mainprog = self.properties.get('mainprog', True)
+        return self.generate_code(template_info, filename=filename, classname=classname, baseclass=baseclass, encoding=encoding, mainprog=mainprog, **kwargs)
 
 
     def build_classname(self, filename, prefix=None, postfix=None, **kwargs):
@@ -51,7 +53,7 @@ class PythonTranslator(Translator):
         return classname
 
 
-    def generate_code(self, template_info, filename=None, classname=None, parent=None, encoding=None, **properties):
+    def generate_code(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, **properties):
         stmt_list       = template_info.stmt_list
         elem_info_table = template_info.elem_info_table
         buf = []
@@ -77,7 +79,7 @@ class PythonTranslator(Translator):
             "__all__ = ['", classname, "', 'escape_xml', 'to_str', 'h', ]\n"
             '\n'
             '\n'
-            'class ', classname, '(', parent, '):\n'
+            'class ', classname, '(', baseclass, '):\n'
             '\n'
             '    def __init__(self, **_context):\n'
             '        for k, v in _context.iteritems():\n'
@@ -122,6 +124,14 @@ class PythonTranslator(Translator):
         #    "    pass\n"
         #    "\n",
         #    ))
+        if mainprog:
+            buf.extend((
+            "\n"
+            "# for test\n"
+            "if __name__ == '__main__':\n"
+            "    print ", classname, "().create_document(),\n"
+            "\n"
+            ))
         return ''.join(buf)
 
 

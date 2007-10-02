@@ -12,6 +12,7 @@ from kwartzite.parser import Parser
 from kwartzite.parser.TextParser import TextParser
 from kwartzite.translator import Translator
 from kwartzite.translator.PythonTranslator import PythonTranslator
+from kwartzite.translator.JavaTranslator import JavaTranslator
 
 
 
@@ -46,13 +47,15 @@ class Main(object):
             "  -v         :  version",
             "  -n         :  no exec",
             "  -q         :  quiet mode",
-            "  -a action  :  compile/parse/names (default '%s')" % d['action'],
+            "  -a action  :  action (compile/parse/names) (default '%s')" % d['action'],
             #"  -p name    :  parser name (default '%s')" % d['parser'],
-            #"  -t name    :  translator name (default '%s')" % d['translator'],
+            "  -t name    :  translator name (python/java) (default '%s')" % d['translator'],
             "  -o file    :  output filename. '%' represents basename (ex. '%.py')",
             "  -d dir     :  output directory",
             "  --encoding=str  :  encoding\n",
             "  --classname=str :  generated class name\n",
+            "  --baseclass=str :  base class name of generated class\n",
+            "  --mainprog={true|false} :  define main program or method\n",
             "  --dattr=str     :  directive attribute name (default '%s')" % config.DATTR,
             "  --delspan={true|false} : delete dummy <span> tag (default %s)" % config.DELSPAN,
             "  --idflag={all|upper|lower|none} : policy which element to select (default '%s')" % config.IDFLAG,
@@ -133,8 +136,9 @@ class Main(object):
                 pattern = output_filename
                 dirname, basename = os.path.split(filename)
                 noext = re.sub('\.\w+$', '', basename)
-                basename = pattern.replace('%', noext, 1)
-                output_filename = '%s/%s' % (dirname, basename)
+                output_filename = pattern.replace('%', noext, 1)
+                if dirname:
+                    output_filename = '%s/' + output_filename
             if output_dir:
                 basename = os.path.basename(output_filename)
                 output_filename = '%s/%s' % (output_dir, basename)
@@ -187,7 +191,7 @@ class Main(object):
     def _find_translator_class(self, translator_name):
         translator_class_table = {
             'python': PythonTranslator,
-            #'java':  JavaTranslator,
+            'java':   JavaTranslator,
             #'ruby':  RubyTranslator,
             #'php':   PhpTranslator,
             #'js':    JavascriptTranslator,
