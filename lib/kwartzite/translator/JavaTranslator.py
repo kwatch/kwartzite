@@ -33,22 +33,20 @@ def c(name):
 class JavaTranslator(Translator):
 
 
-    def translate(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, **kwargs):
-        if filename is None:
-            filename = template_info.filename
-        if classname is None:
-            classname = self.build_classname(filename, **kwargs)
-        if baseclass is None:
-            baseclass = self.properties.get('baseclass', 'Object')
-        if encoding is None:
-            encoding = self.encoding
-        if mainprog is None:
-            mainprog = self.properties.get('mainprog', True)
-        if package is None:
-            package = self.properties.get('package')
-        if interface is None:
-            interface = self.properties.get('interface')
-        return self.generate_code(template_info, filename=filename, classname=classname, baseclass=baseclass, encoding=encoding, mainprog=mainprog, package=package, interface=interface, **kwargs)
+    def translate(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, context=None, nullobj=None, **kwargs):
+        propget = self.properties.get
+        if filename    is None:  filename    = template_info.filename
+        if classname   is None:  classname   = self.build_classname(filename, **kwargs)
+        if baseclass   is None:  baseclass   = propget('baseclass', 'Object')
+        if encoding    is None:  encoding    = self.encoding
+        if mainprog    is None:  mainprog    = propget('mainprog', True)
+        if package     is None:  package     = propget('package')
+        if interface   is None:  interface   = propget('interface')
+        if context     is None:  context     = propget('context', False)
+        if nullobj     is None:  nullobj     = propget('nullobj', False)
+        self.nullobj = nullobj
+        self.nullvalue = nullobj and 'NULL' or 'null'
+        return self.generate_code(template_info, filename=filename, classname=classname, baseclass=baseclass, encoding=encoding, mainprog=mainprog, package=package, interface=interface, context=context, nullobj=nullobj, **kwargs)
 
 
     def build_classname(self, filename, prefix=None, postfix=None, **kwargs):
@@ -64,7 +62,7 @@ class JavaTranslator(Translator):
         return classname
 
 
-    def generate_code(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, **properties):
+    def generate_code(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, context=None, nullobj=None, **properties):
         stmt_list       = template_info.stmt_list
         elem_info_table = template_info.elem_info_table
         buf = []
@@ -89,6 +87,20 @@ class JavaTranslator(Translator):
             'public class ', classname, ' extends ', baseclass, s, ' {\n'
             '\n'
             '    protected StringBuffer _buf = new StringBuffer();\n'
+            ))
+        if context:
+            extend((
+            '    protected Map _context;\n'
+            '\n'
+            '    public ', classname, '() {\n'
+            '         this(new HashMap());\n'
+            '    }\n'
+            '\n'
+            '    public ', classname, '(Map _context) {\n'
+            '        this._context = _context;\n'
+            ))
+        else:
+            extend((
             '\n'
             '    public ', classname, '() {\n'
             ))
@@ -137,10 +149,13 @@ class JavaTranslator(Translator):
 
 
     def expand_utils(self, buf):
-        buf.append(
+        if self.nullobj:
+            buf.extend((
             '\n'
-            '    //public static final Object NULL = new Object();\n'
-            '    public static final String NULL = new String("");\n'
+            '    //public static final Object ', self.nullvalue, ' = new Object();\n'
+            '    public static final String ', self.nullvalue, ' = new String("");\n'
+            ))
+        buf.extend((
             '\n'
             '    public static String toStr(Object val) {\n'
             '        return val == null ? "" : val.toString();\n'
@@ -154,13 +169,13 @@ class JavaTranslator(Translator):
             '        for (Iterator it = attr.keySet().iterator(); it.hasNext(); ) {\n'
             '            Object key = it.next();\n'
             '            Object val = attr.get(key);\n'
-            '            if (val != NULL) {\n'
+            '            if (val != ', self.nullvalue, ') {\n'
             '                _buf.append(\' \').append(key).append("=\\"").append(toStr(val)).append(\'"\');\n'
             #'                _buf.append(\' \').append(key).append("=\\"").append(val).append(\'"\');\n'
             '            }\n'
             '        }\n'
             '    }\n'
-            )
+            ))
 
 
     def expand_items(self, buf, stmt_list):
@@ -205,14 +220,14 @@ class JavaTranslator(Translator):
         name = elem_info.name
         extend = buf.extend
         ## instance variable declaration
-        initval = not elem_info.cont_text_p() and ' = NULL' or ''
+        initval = not elem_info.cont_text_p() and (' = '+self.nullvalue) or ''
         d_name = elem_info.directive.name
         if d_name in ('mark', 'attr', 'textattr'):
             extend(('    public Map attr', c(name), ';\n', ))
         if d_name in ('mark', 'text', 'textattr'):
             extend(('    public String text', c(name), initval, ';\n', ))
         if d_name in ('mark', 'node'):
-            extend(('    public String node', c(name), ' = NULL;\n', ))
+            extend(('    public String node', c(name), ' = ', self.nullvalue, ';\n', ))
         ## start of init_xxx
         extend((
             '\n'
@@ -248,7 +263,7 @@ class JavaTranslator(Translator):
         name = elem_info.name
         buf.extend((
             '    public void elem', c(name), '() {\n'
-            '        if (node', c(name), ' == NULL) {\n'
+            '        if (node', c(name), ' == ', self.nullvalue, ') {\n'
             '            stag', c(name), '();\n'
             '            cont', c(name), '();\n'
             '            etag', c(name), '();\n'
@@ -289,12 +304,12 @@ class JavaTranslator(Translator):
             ))
         if elem_info.cont_text_p():
             extend((
-            '        if (text', c(name), ' != NULL)\n'
+            '        if (text', c(name), ' != ', self.nullvalue, ')\n'
             '            _buf.append(text', c(name), ');\n'
             ))
         else:
             extend((
-            '        if (text', c(name), ' != NULL) {\n'
+            '        if (text', c(name), ' != ', self.nullvalue, ') {\n'
             '            _buf.append(text', c(name), ');\n'
             '            return;\n'
             '        }\n',

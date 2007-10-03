@@ -52,11 +52,11 @@ class Attribute(object):
             self._modified = true
 
 
-    def append_to(self, buf):
+    def append_to(self, buf, nullobj=None):
         _values = self._values
         for name in self._names:
             val = _values[name]
-            if val is not NULL:
+            if val is not nullobj:
                 buf.extend((' ', name, '="', val, '"'))
 
 
