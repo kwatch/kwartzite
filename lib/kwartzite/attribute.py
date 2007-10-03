@@ -5,7 +5,7 @@
 ###
 
 
-_dummy_value = object()
+form kwartzite.util import NULL
 
 
 
@@ -55,7 +55,9 @@ class Attribute(object):
     def append_to(self, buf):
         _values = self._values
         for name in self._names:
-            buf.extend((' ', name, '="', _values[name], '"'))
+            val = _values[name]
+            if val is not NULL:
+                buf.extend((' ', name, '="', val, '"'))
 
 
     def to_string(self):
@@ -112,12 +114,12 @@ class Attribute(object):
             self._modified = True
 
 
-    def pop(self, key, default=_dummy_value):
+    def pop(self, key, default=NULL):
         if self._values.has_key(key):
             self._names.remove(key)
             self._modified = True
             return self._values.pop(key)
-        elif default is _dummy_value:
+        elif default is NULL:
             return self._values.pop(key)
         else:
             return self._values.pop(key, default)

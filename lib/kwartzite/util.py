@@ -8,6 +8,11 @@
 import re
 
 
+
+NULL = object()
+
+
+
 def to_str(val):
     if val is None: return ''
     if isinstance(val, (str, unicode)): return val

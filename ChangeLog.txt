@@ -2,6 +2,9 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.9 (2007-10-03)
+	.- [enhance] util.py, attribute.py, Python.py: NULL support
+
 : rev.8 (2007-10-03)
 	.- [change] TextParser.py: class Expression has new property 'name' and 'kind'
 	.- [change] TextParser.py: TextParser#_handle_directive_{text,attr,textattr,node}() are defined

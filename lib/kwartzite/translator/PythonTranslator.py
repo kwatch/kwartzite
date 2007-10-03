@@ -67,12 +67,12 @@ class PythonTranslator(Translator):
             ))
         if encoding:
             buf.extend((
-            'from kwartzite.util import escape_xml, generate_tostrfunc\n'
+            'from kwartzite.util import escape_xml, generate_tostrfunc, NULL\n'
             'to_str = generate_tostrfunc(', repr(encoding), ')\n'
             ))
         else:
             buf.extend((
-            'from kwartzite.util import escape_xml, to_str\n'
+            'from kwartzite.util import escape_xml, to_str, NULL\n'
             ))
         buf.extend((
             'h = escape_xml\n'
@@ -189,14 +189,14 @@ class PythonTranslator(Translator):
         buf.extend(("    def init_", name, "(self):\n", ))
         ## node_xxx
         if d_name in ('mark', 'node'):
-            buf.extend(("        self.node_", name, " = None\n", ))
+            buf.extend(("        self.node_", name, " = NULL\n", ))
         ## text_xxx
         if d_name in ('mark', 'text', 'textattr'):
             if elem_info.cont_text_p():
                 s = elem_info.cont_stmts[0]
                 buf.extend(("        self.text_", name, " = '''", q(s), "'''\n", ))
             else:
-                buf.extend(("        self.text_", name, " = None\n", ))
+                buf.extend(("        self.text_", name, " = NULL\n", ))
         ## attr_xxx
         if d_name in ('mark', 'attr', 'textattr'):
             buf.extend(('        self.attr_', name, ' = Attribute', ))
@@ -218,7 +218,7 @@ class PythonTranslator(Translator):
         name = elem_info.name
         buf.extend((
             '    def elem_', name, '(self):\n'
-            '        if self.node_', name, ' is None:\n'
+            '        if self.node_', name, ' is NULL:\n'
             '            self.stag_', name, '()\n'
             '            self.cont_', name, '()\n'
             '            self.etag_', name, '()\n'
@@ -255,7 +255,7 @@ class PythonTranslator(Translator):
             buf.extend(('        self._buf.append(to_str(self.text_', name, '))\n', ))
         else:
             buf.extend(('        _buf = self._buf\n', ))
-            buf.extend(('        if self.text_', name, ' is not None:\n'
+            buf.extend(('        if self.text_', name, ' is not NULL:\n'
                         '            _buf.append(self.text_', name, ')\n', ))
             if not elem_info.cont_stmts:
                 return
