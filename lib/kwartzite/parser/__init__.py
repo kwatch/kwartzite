@@ -28,13 +28,13 @@ class ParseError(BaseError):
 class TemplateInfo(object):
 
 
-    def __init__(self, stmt_list, elem_info_table, filename=None):
-        self.stmt_list       = self.pack(stmt_list)
-        self.elem_info_table = elem_info_table
-        self.filename        = filename
-        for name, elem_info in self.elem_info_table.iteritems():
-            if elem_info.cont_stmts:
-                elem_info.cont_stmts = self.pack(elem_info.cont_stmts)
+    def __init__(self, stmt_list, elem_table, filename=None):
+        self.stmt_list  = self.pack(stmt_list)
+        self.elem_table = elem_table
+        self.filename   = filename
+        for name, elem in self.elem_table.iteritems():
+            if elem.cont:
+                elem.cont = self.pack(elem.cont)
 
 
     def pack(self, stmt_list):

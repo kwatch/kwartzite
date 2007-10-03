@@ -5,7 +5,7 @@
 ###
 
 
-form kwartzite.util import NULL
+from kwartzite.util import NULL
 
 
 

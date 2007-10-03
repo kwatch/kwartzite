@@ -2,6 +2,9 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.13 (2007-10-04)
+	.- [refactor] 'stag_info', 'etag_info', 'cont_stmts', 'elem_info' are renamed to 'stag', 'etag', 'cont', 'elem'
+	.- 
 
 : rev.12 (2007-10-04)
 	.- [enhance] main.py: '-o' and '--classname' can contain pattern characters

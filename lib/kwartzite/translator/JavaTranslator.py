@@ -51,7 +51,7 @@ class JavaTranslator(Translator):
 
     def generate_code(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, context=None, nullobj=None, **properties):
         stmt_list       = template_info.stmt_list
-        elem_info_table = template_info.elem_info_table
+        elem_table = template_info.elem_table
         classname = self.build_classname(filename, pattern=classname, **properties)
         buf = []
         extend = buf.extend
@@ -92,7 +92,7 @@ class JavaTranslator(Translator):
             '\n'
             '    public ', classname, '() {\n'
             ))
-        for name, elem_info in elem_info_table.iteritems():
+        for name, elem in elem_table.iteritems():
             extend(('        init', c(name), '();\n', ))
         extend((
             '    }\n'
@@ -109,18 +109,18 @@ class JavaTranslator(Translator):
             '    }\n'
             '\n',
             ))
-        for name, elem_info in elem_info_table.iteritems():
+        for name, elem in elem_table.iteritems():
             extend((
             '\n'
             '    // element \'', name, '\'\n'
             '\n'
             ))
-            self.expand_init(buf, elem_info); buf.append("\n")
-            if elem_info.directive.name != 'mark':  continue
-            self.expand_elem(buf, elem_info); buf.append("\n")
-            self.expand_stag(buf, elem_info); buf.append("\n")
-            self.expand_cont(buf, elem_info); buf.append("\n")
-            self.expand_etag(buf, elem_info); buf.append("\n")
+            self.expand_init(buf, elem); buf.append("\n")
+            if elem.directive.name != 'mark':  continue
+            self.expand_elem(buf, elem); buf.append("\n")
+            self.expand_stag(buf, elem); buf.append("\n")
+            self.expand_cont(buf, elem); buf.append("\n")
+            self.expand_etag(buf, elem); buf.append("\n")
         if mainprog:
             extend((
             '\n'
@@ -182,9 +182,9 @@ class JavaTranslator(Translator):
                 L.append('"' + q(item) + '"' + s)
             elif isinstance(item, ElementInfo):
                 flush(L, buf)
-                elem_info = item
-                assert elem_info.directive.name == 'mark'
-                buf.extend(("        elem", c(elem_info.name), "();\n", ))
+                elem = item
+                assert elem.directive.name == 'mark'
+                buf.extend(("        elem", c(elem.name), "();\n", ))
             elif isinstance(item, Expression):
                 expr = item
                 kind = expr.kind
@@ -204,12 +204,12 @@ class JavaTranslator(Translator):
         flush(L, buf)
 
 
-    def expand_init(self, buf, elem_info):
-        name = elem_info.name
+    def expand_init(self, buf, elem):
+        name = elem.name
         extend = buf.extend
         ## instance variable declaration
-        initval = not elem_info.cont_text_p() and (' = '+self.nullvalue) or ''
-        d_name = elem_info.directive.name
+        initval = not elem.cont_text_p() and (' = '+self.nullvalue) or ''
+        d_name = elem.directive.name
         if d_name in ('mark', 'attr', 'textattr'):
             extend(('    public Map attr', c(name), ';\n', ))
         if d_name in ('mark', 'text', 'textattr'):
@@ -224,31 +224,31 @@ class JavaTranslator(Translator):
         ## attr_xxx
         if d_name in ('mark', 'attr', 'textattr'):
             extend((
-                '        attr', c(name), ' = new HashMap();\n'
-                ))
-            for space, aname, avalue in elem_info.attr_info:
+            '        attr', c(name), ' = new HashMap();\n'
+            ))
+            for space, aname, avalue in elem.attr:
                 if isinstance(avalue, Expression):
                     s = avalue.code;
                 else:
                     s = '"' + q(avalue) + '"'
                 extend((
-                '        attr', c(name), '.put("', aname, '", ', s, ');\n',
-                ))
+            '        attr', c(name), '.put("', aname, '", ', s, ');\n',
+            ))
         ## text_xxx
         if d_name in ('mark', 'text', 'textattr'):
-            if elem_info.cont_text_p():
-                assert len(elem_info.cont_stmts) == 1
+            if elem.cont_text_p():
+                assert len(elem.cont) == 1
                 extend((
-                '        text', c(name), ' = "', q(elem_info.cont_stmts[0]), '";\n'
-                ))
+            '        text', c(name), ' = "', q(elem.cont[0]), '";\n'
+            ))
         ## end of init_xxx
         extend((
             '    }\n',
             ))
 
 
-    def expand_elem(self, buf, elem_info):
-        name = elem_info.name
+    def expand_elem(self, buf, elem):
+        name = elem.name
         buf.extend((
             '    public void elem', c(name), '() {\n'
             '        if (node', c(name), ' == ', self.nullvalue, ') {\n'
@@ -262,16 +262,16 @@ class JavaTranslator(Translator):
             ))
 
 
-    def expand_stag(self, buf, elem_info):
-        name = elem_info.name
+    def expand_stag(self, buf, elem):
+        name = elem.name
         extend = buf.extend
-        stag = elem_info.stag_info
+        stag = elem.stag
         extend((
             '    public void stag', c(name), '() {\n'
             ))
-        if stag.tagname:
+        if stag.name:
             extend((
-            '        _buf.append("', stag.head_space or '', '<', stag.tagname, '");\n'
+            '        _buf.append("', stag.head_space or '', '<', stag.name, '");\n'
             '        appendAttribute(attr', c(name), ');\n'
             '        _buf.append("', q(stag.extra_space or ''), stag.is_empty and ' />' or '>', q(stag.tail_space or ''), '");\n',
             ))
@@ -284,13 +284,13 @@ class JavaTranslator(Translator):
             )
 
 
-    def expand_cont(self, buf, elem_info):
-        name = elem_info.name
+    def expand_cont(self, buf, elem):
+        name = elem.name
         extend = buf.extend
         extend((
             '    public void cont', c(name), '() {\n',
             ))
-        if elem_info.cont_text_p():
+        if elem.cont_text_p():
             extend((
             '        if (text', c(name), ' != ', self.nullvalue, ')\n'
             '            _buf.append(text', c(name), ');\n'
@@ -302,17 +302,17 @@ class JavaTranslator(Translator):
             '            return;\n'
             '        }\n',
             ))
-            if elem_info.cont_stmts:
-                self.expand_items(buf, elem_info.cont_stmts)
+            if elem.cont:
+                self.expand_items(buf, elem.cont)
         buf.append(
             '    }\n'
             )
 
 
-    def expand_etag(self, buf, elem_info):
-        name = elem_info.name
+    def expand_etag(self, buf, elem):
+        name = elem.name
         extend = buf.extend
-        etag = elem_info.etag_info
+        etag = elem.etag
         extend((
             '    public void etag', c(name), '() {\n',
             ))
@@ -320,11 +320,11 @@ class JavaTranslator(Translator):
             extend((
             '        //\n'
             ))
-        elif etag.tagname:
+        elif etag.name:
             s1 = q(etag.head_space or '')
             s2 = q(etag.tail_space or '')
             extend((
-            '        _buf.append("', s1, '</', etag.tagname, '>', s2, '");\n',
+            '        _buf.append("', s1, '</', etag.name, '>', s2, '");\n',
             ))
         else:
             s = (etag.head_space or '') + (etag.tail_space or '')
