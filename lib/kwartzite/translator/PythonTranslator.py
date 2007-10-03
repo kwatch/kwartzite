@@ -106,18 +106,24 @@ class PythonTranslator(Translator):
             "\n"
             ))
             self.expand_init(buf, elem_info); buf.append("\n")
-            self.expand_elem(buf, elem_info); buf.append("\n")
-            self.expand_stag(buf, elem_info); buf.append("\n")
-            self.expand_cont(buf, elem_info); buf.append("\n")
-            self.expand_etag(buf, elem_info); buf.append("\n")
-            buf.extend((
+            if elem_info.directive.name == 'mark':
+                self.expand_elem(buf, elem_info); buf.append("\n")
+                self.expand_stag(buf, elem_info); buf.append("\n")
+                self.expand_cont(buf, elem_info); buf.append("\n")
+                self.expand_etag(buf, elem_info); buf.append("\n")
+            if elem_info.directive.name == 'mark':
+                buf.extend((
             "    _init_", name, " = init_", name, "\n"
             "    _elem_", name, " = elem_", name, "\n"
             "    _stag_", name, " = stag_", name, "\n"
             "    _cont_", name, " = cont_", name, "\n"
             "    _etag_", name, " = etag_", name, "\n"
-            "\n",
-            ))
+                ))
+            else:
+                buf.extend((
+            "    _init_", name, " = init_", name, "\n"
+                ))
+            buf.append("\n")
         #buf.extend((
         #    "\n"
         #    "class ", classname, "(", classname, "_):\n"
@@ -141,7 +147,39 @@ class PythonTranslator(Translator):
                 buf.extend(("        _buf.append('''", q(item), "''')\n", ))
             elif isinstance(item, ElementInfo):
                 elem_info = item
-                buf.extend(("        self.elem_", elem_info.name, "()\n", ))
+                d_name = elem_info.directive.name
+                if d_name == 'mark':
+                    buf.extend(("        self.elem_", elem_info.name, "()\n", ))
+                elif d_name == 'text':
+                    buf.extend(("        _buf.extend(('''",
+                                q(elem_info.stag_info.tag_text), "''', "
+                                "to_str(self.text_", elem_info.name, "), "
+                                "'''", q(elem_info.etag_info.tag_text), "''', ))\n"
+                                ))
+                elif d_name == 'node':
+                    buf.extend(("        _buf.append(to_str(self.node_", elem_info.name, "))\n", ))
+                elif d_name == 'attr' or d_name == 'textattr':
+                    stag = elem_info.stag_info
+                    etag = elem_info.etag_info
+                    s1 = stag.head_space or ''
+                    s2 = stag.extra_space or ''
+                    s3 = stag.tail_space or ''
+                    buf.extend(("        _buf.append('''", s1, "<", stag.tagname, "''')\n"
+                                "        self.attr_", elem_info.name, ".append_to(self._buf)\n"
+                                ))
+                    if stag.is_empty:
+                        buf.extend(("        _buf.append('''", s2, "/>", s3, "''')\n", ))
+                    elif d_name == 'textattr':
+                        buf.extend(("        _buf.extend(('''", s2, ">", s3, "''',\n"
+                                    "            to_str(self.text_", elem_info.name, "),\n"
+                                    "            '''", q(etag.tag_text), "''', ))\n",))
+                    elif elem_info.cont_text_p():
+                        buf.extend(("        _buf.append('''", s2, ">", s3,
+                                    q(elem_info.cont_stmts[0]), etag.tag_text, ))
+                    else:
+                        buf.extend(("        _buf.append('''", s2, ">", s3, "''')\n", ))
+                        self.expand_items(elem_info.cont_stmts)
+                        buf.extend(("        _buf.append('''", etag.tag_text, "''')\n", ))
             elif isinstance(item, Expression):
                 expr = item
                 buf.extend(("        _buf.append(to_str(", expr.code, "))\n", ))
@@ -151,29 +189,33 @@ class PythonTranslator(Translator):
 
     def expand_init(self, buf, elem_info):
         name = elem_info.name
+        d_name = elem_info.directive.name
         buf.extend(("    def init_", name, "(self):\n", ))
         ## node_xxx
-        buf.extend(("        self.node_", name, " = None\n", ))
+        if d_name in ('mark', 'node'):
+            buf.extend(("        self.node_", name, " = None\n", ))
         ## text_xxx
-        if elem_info.cont_text_p():
-            s = elem_info.cont_stmts[0]
-            buf.extend(("        self.text_", name, " = '''", q(s), "'''\n", ))
-        else:
-            buf.extend(("        self.text_", name, " = None\n", ))
+        if d_name in ('mark', 'text', 'textattr'):
+            if elem_info.cont_text_p():
+                s = elem_info.cont_stmts[0]
+                buf.extend(("        self.text_", name, " = '''", q(s), "'''\n", ))
+            else:
+                buf.extend(("        self.text_", name, " = None\n", ))
         ## attr_xxx
-        buf.extend(('        self.attr_', name, ' = Attribute', ))
-        attr_info = elem_info.attr_info
-        if attr_info.is_empty():
-            buf.append('()\n')
-        else:
-            buf.append('((\n')
-            for space, aname, avalue in attr_info:
-                if isinstance(avalue, Expression):
-                    s = "'''<"+q(avalue.code)+">'''"
-                else:
-                    s = repr(avalue)
-                buf.extend(("            ('", aname, "',", s, "),\n", ))
-            buf.append('        ))\n')
+        if d_name in ('mark', 'attr', 'textattr'):
+            buf.extend(('        self.attr_', name, ' = Attribute', ))
+            attr_info = elem_info.attr_info
+            if attr_info.is_empty():
+                buf.append('()\n')
+            else:
+                buf.append('((\n')
+                for space, aname, avalue in attr_info:
+                    if isinstance(avalue, Expression):
+                        s = "'''<"+q(avalue.code)+">'''"
+                    else:
+                        s = repr(avalue)
+                    buf.extend(("            ('", aname, "',", s, "),\n", ))
+                buf.append('        ))\n')
 
 
     def expand_elem(self, buf, elem_info):
@@ -219,7 +261,7 @@ class PythonTranslator(Translator):
             buf.extend(('        _buf = self._buf\n', ))
             buf.extend(('        if self.text_', name, ' is not None:\n'
                         '            _buf.append(self.text_', name, ')\n', ))
-            if elem_info.cont_stmts:
+            if not elem_info.cont_stmts:
                 return
             buf.append( '            return\n')
             self.expand_items(buf, elem_info.cont_stmts)

@@ -2,6 +2,10 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.7 (2007-10-03)
+	.- [enhance] TextParser.py: directive 'text', 'attr', 'textattr', 'node' support
+	.- [enhance] PythonTranslator.py: directive 'text', 'attr', 'textattr', 'node' support
+
 : rev.6 (2007-10-03)
 	.- [enhance] PythonTranslator.py: node_xxx support
 	.- [enhance] JavaTranslator.py: nodeXxx support

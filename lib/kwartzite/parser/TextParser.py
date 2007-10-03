@@ -123,6 +123,7 @@ class ElementInfo(object):
         self.cont_stmts   = cont_stmts     # list of Statement
         self.attr_info    = attr_info      # AttrInfo
         self.name = None
+        self.directive = None
 
 
     def cont_text_p(self):
@@ -244,7 +245,7 @@ class TextParser(Parser):
                 directive = self._get_directive(attr_info, taginfo)
                 if directive:
                     directive.linenum = taginfo.linenum
-                    if directive.name == 'mark':
+                    if self._is_marking(directive.name):
                         elem_name = directive.arg
                         self._elem_names.append(elem_name)
                     stag_info = taginfo
@@ -260,7 +261,7 @@ class TextParser(Parser):
                 directive = self._get_directive(attr_info, taginfo)
                 if directive:
                     directive.linenum = taginfo.linenum
-                    if directive.name == 'mark':
+                    if self._is_marking(directive.name):
                         elem_name = directive.arg
                         self._elem_names.append(elem_name)
                     stag_info = taginfo
@@ -285,6 +286,10 @@ class TextParser(Parser):
             stmt_list.append(self._rest)
         self.elem_info_table._keys = self._elem_names
         return None
+
+
+    def _is_marking(self, directive_name):
+        return directive_name in ('mark', 'text', 'node', 'attr', 'textattr', )
 
 
     def _parse_error(self, msg, linenum, column=None):
@@ -346,6 +351,12 @@ class TextParser(Parser):
             d = directive
             msg = '%s="%s": unknown directive.' % (d.attr_name, d.attr_value)
             raise self._parse_error(msg, d.linenum)
+        is_empty_tag = elem_info.stag_info.is_empty
+        if is_empty_tag and directive.name in ('text', 'textattr', 'value'):
+            d = directive
+            msg = '%s="%s": not available with empty tag.' % (d.attr_name, d.attr_value)
+            raise self._parse_error(msg, d.linenum)
+        elem_info.directive = directive
         func(directive, elem_info, stmt_list)
 
 
@@ -364,6 +375,12 @@ class TextParser(Parser):
             raise self._parse_error(msg, d.linenum)
         self.elem_info_table[name] = elem_info
         stmt_list.append(elem_info)
+
+
+    _handle_directive_text     = _handle_directive_mark
+    _handle_directive_node     = _handle_directive_mark
+    _handle_directive_attr     = _handle_directive_mark
+    _handle_directive_textattr = _handle_directive_mark
 
 
     def _handle_directive_value(self, directive, elem_info, stmt_list):
