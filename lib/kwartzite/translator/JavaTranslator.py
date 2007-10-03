@@ -110,9 +110,10 @@ class JavaTranslator(Translator):
             '\n'
             '    // for test\n'
             '    public static void main(String[] args) {\n'
-            '        ', classname, ' template_ = new ', classname, '();\n'
-            '        String output_ = template_.createDocument();\n'
-            '        System.out.print(output_);\n'
+            #'        ', classname, ' template_ = new ', classname, '();\n'
+            #'        String output_ = template_.createDocument();\n'
+            #'        System.out.print(output_);\n'
+            '        System.out.print(new ', classname, '().createDocument());\n'
             '    }\n'
             ))
         buf.append(
@@ -161,10 +162,12 @@ class JavaTranslator(Translator):
 
     def expand_init(self, buf, elem_info):
         name = elem_info.name
+        initval = not elem_info.cont_text_p() and ' = null' or ''
         buf.extend((
             #'    public Map attr', c(name), ' = new HashMap();\n'
             '    public Map attr', c(name), ';\n'
-            '    public String text', c(name), ';\n'
+            '    public String text', c(name), initval, ';\n'
+            '    public String node', c(name), ' = null;\n'
             '\n'
             '    public void init', c(name), '() {\n'
             ))
@@ -195,9 +198,13 @@ class JavaTranslator(Translator):
         name = elem_info.name
         buf.extend((
             '    public void elem', c(name), '() {\n'
-            '        stag', c(name), '();\n'
-            '        cont', c(name), '();\n'
-            '        etag', c(name), '();\n'
+            '        if (node', c(name), ' == null) {\n'
+            '            stag', c(name), '();\n'
+            '            cont', c(name), '();\n'
+            '            etag', c(name), '();\n'
+            '        } else {\n'
+            '            _buf.append(toStr(node', c(name), '));\n'
+            '        }\n'
             '    }\n'
             ))
 

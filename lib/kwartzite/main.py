@@ -138,7 +138,7 @@ class Main(object):
                 noext = re.sub('\.\w+$', '', basename)
                 output_filename = pattern.replace('%', noext, 1)
                 if dirname:
-                    output_filename = '%s/' + output_filename
+                    output_filename = '%s/%s' % (dirname, output_filename)
             if output_dir:
                 basename = os.path.basename(output_filename)
                 output_filename = '%s/%s' % (output_dir, basename)

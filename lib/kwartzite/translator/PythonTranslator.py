@@ -152,6 +152,8 @@ class PythonTranslator(Translator):
     def expand_init(self, buf, elem_info):
         name = elem_info.name
         buf.extend(("    def init_", name, "(self):\n", ))
+        ## node_xxx
+        buf.extend(("        self.node_", name, " = None\n", ))
         ## text_xxx
         if elem_info.cont_text_p():
             s = elem_info.cont_stmts[0]
@@ -178,9 +180,12 @@ class PythonTranslator(Translator):
         name = elem_info.name
         buf.extend((
             '    def elem_', name, '(self):\n'
-            '        self.stag_', name, '()\n'
-            '        self.cont_', name, '()\n'
-            '        self.etag_', name, '()\n'
+            '        if self.node_', name, ' is None:\n'
+            '            self.stag_', name, '()\n'
+            '            self.cont_', name, '()\n'
+            '            self.etag_', name, '()\n'
+            '        else:\n'
+            '            self._buf.append(to_str(self.node_', name, '))\n'
             ))
 
 
