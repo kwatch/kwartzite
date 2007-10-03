@@ -141,8 +141,10 @@ class ElementInfo(object):
 class Expression(object):
 
 
-    def __init__(self, code_str):
+    def __init__(self, code_str, name=None, kind='native'):
         self.code = code_str
+        self.name = name
+        self.kind = kind
 
 
 
@@ -360,9 +362,8 @@ class TextParser(Parser):
         func(directive, elem_info, stmt_list)
 
 
-    def _handle_directive_mark(self, directive, elem_info, stmt_list):
+    def _check_mark_directive(self, directive, elem_info, stmt_list):
         name = directive.arg
-        elem_info.name = name
         if not isword(name):
             d = directive
             msg = '%s="%s": invalid marking name.' % (d.attr_name, d.attr_value)
@@ -373,14 +374,57 @@ class TextParser(Parser):
             msg = '%s="%s": marking name duplicated (found at line %s).' % \
                   (d.attr_name, d.attr_value, e.tag_info.linenum)
             raise self._parse_error(msg, d.linenum)
+        ## common operation
+        name = directive.arg
+        elem_info.name = name
         self.elem_info_table[name] = elem_info
+
+
+    def _handle_directive_mark(self, directive, elem_info, stmt_list):
+        self._check_mark_directive(directive, elem_info, stmt_list)
         stmt_list.append(elem_info)
 
 
-    _handle_directive_text     = _handle_directive_mark
-    _handle_directive_node     = _handle_directive_mark
-    _handle_directive_attr     = _handle_directive_mark
-    _handle_directive_textattr = _handle_directive_mark
+    def _handle_directive_text(self, directive, elem_info, stmt_list):
+        self._check_mark_directive(directive, elem_info, stmt_list)
+        stmt_list.append(elem_info.stag_info.tag_text)
+        self.__handle_directive_text(directive, elem_info, stmt_list)
+
+
+    def __handle_directive_text(self, directive, elem_info, stmt_list):
+        expr = Expression(None, name=directive.arg, kind='text')
+        stmt_list.extend((expr, elem_info.etag_info.tag_text, ))
+
+
+    def __handle_directive_attr(self, directive, elem_info, stmt_list):
+        expr = Expression(None, name=directive.arg, kind='attr')
+        stag = elem_info.stag_info
+        stmt_list.extend((
+            stag.head_space or '', '<', stag.tagname, expr,
+            stag.extra_space or '', stag.is_empty and '/>' or '>',
+            stag.tail_space or '',
+            ))
+
+
+    def _handle_directive_attr(self, directive, elem_info, stmt_list):
+        self._check_mark_directive(directive, elem_info, stmt_list)
+        self.__handle_directive_attr(directive, elem_info, stmt_list)
+        if not stag.is_empty:
+            if elem_info.cont_stmts:
+                stmt_list.extend(elem_info.cont_stmts)
+            stmt_list.append(elem_info.etag_info.tag_text)
+
+
+    def _handle_directive_textattr(self, directive, elem_info, stmt_list):
+        self._check_mark_directive(directive, elem_info, stmt_list)
+        self.__handle_directive_attr(directive, elem_info, stmt_list)
+        self.__handle_directive_text(directive, elem_info, stmt_list)
+
+
+    def _handle_directive_node(self, directive, elem_info, stmt_list):
+        self._check_mark_directive(directive, elem_info, stmt_list)
+        expr = Expression(None, name=directive.arg, kind='node')
+        stmt_list.append(expr)
 
 
     def _handle_directive_value(self, directive, elem_info, stmt_list):

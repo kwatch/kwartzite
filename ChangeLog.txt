@@ -2,6 +2,11 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.8 (2007-10-03)
+	.- [change] TextParser.py: class Expression has new property 'name' and 'kind'
+	.- [change] TextParser.py: TextParser#_handle_directive_{text,attr,textattr,node}() are defined
+	.- [change] PythonTranslator.py: output code is optimized when 'text', 'attr', 'node' directives are used
+
 : rev.7 (2007-10-03)
 	.- [enhance] TextParser.py: directive 'text', 'attr', 'textattr', 'node' support
 	.- [enhance] PythonTranslator.py: directive 'text', 'attr', 'textattr', 'node' support

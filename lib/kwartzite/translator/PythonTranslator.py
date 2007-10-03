@@ -142,49 +142,45 @@ class PythonTranslator(Translator):
 
 
     def expand_items(self, buf, stmt_list):
+        def flush(L, buf):
+            if not L:
+                return
+            elif len(L) == 1:
+                buf.extend(("        _buf.append(", L[0][:-2], ")\n", ))
+            else:
+                if L[-1].endswith('\n'):
+                    L[-1] = L[-1][:-1] + ' '
+                buf.append("        _buf.extend((")
+                buf.extend(L)
+                buf.append("))\n")
+            L[:] = ()
+        L = []
         for item in stmt_list:
             if isinstance(item, (str, unicode)):
-                buf.extend(("        _buf.append('''", q(item), "''')\n", ))
+                s = item.endswith('\n') and '\n' or ' '
+                L.append("'''" + q(item) + "'''," + s)
             elif isinstance(item, ElementInfo):
+                flush(L, buf)
                 elem_info = item
-                d_name = elem_info.directive.name
-                if d_name == 'mark':
-                    buf.extend(("        self.elem_", elem_info.name, "()\n", ))
-                elif d_name == 'text':
-                    buf.extend(("        _buf.extend(('''",
-                                q(elem_info.stag_info.tag_text), "''', "
-                                "to_str(self.text_", elem_info.name, "), "
-                                "'''", q(elem_info.etag_info.tag_text), "''', ))\n"
-                                ))
-                elif d_name == 'node':
-                    buf.extend(("        _buf.append(to_str(self.node_", elem_info.name, "))\n", ))
-                elif d_name == 'attr' or d_name == 'textattr':
-                    stag = elem_info.stag_info
-                    etag = elem_info.etag_info
-                    s1 = stag.head_space or ''
-                    s2 = stag.extra_space or ''
-                    s3 = stag.tail_space or ''
-                    buf.extend(("        _buf.append('''", s1, "<", stag.tagname, "''')\n"
-                                "        self.attr_", elem_info.name, ".append_to(self._buf)\n"
-                                ))
-                    if stag.is_empty:
-                        buf.extend(("        _buf.append('''", s2, "/>", s3, "''')\n", ))
-                    elif d_name == 'textattr':
-                        buf.extend(("        _buf.extend(('''", s2, ">", s3, "''',\n"
-                                    "            to_str(self.text_", elem_info.name, "),\n"
-                                    "            '''", q(etag.tag_text), "''', ))\n",))
-                    elif elem_info.cont_text_p():
-                        buf.extend(("        _buf.append('''", s2, ">", s3,
-                                    q(elem_info.cont_stmts[0]), etag.tag_text, ))
-                    else:
-                        buf.extend(("        _buf.append('''", s2, ">", s3, "''')\n", ))
-                        self.expand_items(elem_info.cont_stmts)
-                        buf.extend(("        _buf.append('''", etag.tag_text, "''')\n", ))
+                assert elem_info.directive.name == 'mark'
+                buf.extend(("        self.elem_", elem_info.name, "()\n", ))
             elif isinstance(item, Expression):
                 expr = item
-                buf.extend(("        _buf.append(to_str(", expr.code, "))\n", ))
+                kind = expr.kind
+                if   kind == 'text':
+                    L.append("to_str(self.text_" + expr.name + "), ")
+                elif kind == 'attr':
+                    flush(L, buf)
+                    buf.extend(("        self.attr_", expr.name, ".append_to(self._buf)\n", ))
+                elif kind == 'node':
+                    L.append("to_str(self.node_" + expr.name + "), ")
+                elif kind == 'native':
+                    L.append("to_str(" + expr.code + "), ")
+                else:
+                    assert "** unreachable"
             else:
                 assert "** unreachable"
+        flush(L, buf)
 
 
     def expand_init(self, buf, elem_info):
