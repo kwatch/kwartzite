@@ -2,6 +2,11 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.10 (2007-10-03)
+	.- [enhance] JavaTranslator.py: 'text', 'attr', 'textattr', 'node' support
+	.- [enhance] JavaTranslator.py: --package and --interface support
+	.- [enhance] JavaTranslator.py: NULL object support
+
 : rev.9 (2007-10-03)
 	.- [enhance] util.py, attribute.py, Python.py: NULL support
 
