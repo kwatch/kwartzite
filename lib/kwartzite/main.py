@@ -13,6 +13,7 @@ from kwartzite.parser.TextParser import TextParser
 from kwartzite.translator import Translator
 from kwartzite.translator.PythonTranslator import PythonTranslator
 from kwartzite.translator.JavaTranslator import JavaTranslator
+from kwartzite.util import build_values_from_filename, parse_name_pattern
 
 
 
@@ -50,15 +51,24 @@ class Main(object):
             "  -a action  :  action (compile/parse/names) (default '%s')" % d['action'],
             #"  -p name    :  parser name (default '%s')" % d['parser'],
             "  -t name    :  translator name (python/java) (default '%s')" % d['translator'],
-            "  -o file    :  output filename. '%' represents basename (ex. '%.py')",
+            "  -o file    :  output filename",
             "  -d dir     :  output directory",
-            "  --encoding=str  :  encoding\n",
-            "  --classname=str :  generated class name\n",
-            "  --baseclass=str :  base class name of generated class\n",
-            "  --mainprog={true|false} :  define main program or method\n",
+            "  --encoding=str  :  encoding",
+            "  --classname=str :  generated class name",
+            "  --baseclass=str :  base class name of generated class",
             "  --dattr=str     :  directive attribute name (default '%s')" % config.DATTR,
             "  --delspan={true|false} : delete dummy <span> tag (default %s)" % config.DELSPAN,
-            "  --idflag={all|upper|lower|none} : policy which element to select (default '%s')" % config.IDFLAG,
+            "  --idflag={all|upper|lower|none} : policy to select id name (default '%s')" % config.IDFLAG,
+            "",
+            "Option '-o' and '--classname' can contain the folowing patterns:",
+            "  %f    filename  (ex. 'foo-bar-baz.html')",
+            "  %x    extension (ex. 'html)'",
+            "  %b    filename without extension     (ex. 'foo-bar-baz')",
+            "  %u    basename replaced [^\w] to '_' (ex. 'foo_bar_baz')",
+            "  %d    dirname   (ex. '/path/to/template')",
+            "  %c    classname (ex. 'foo_bar_baz_html') (available only with '-o')",
+            "For example, '-o %u.py' results in 'foo_bar_baz.py'.",
+            "Names are capitalized when upper case (ex. '%F' => 'FooBarBazHtml')",
             "",
         )
         return "\n".join(t)
@@ -134,11 +144,10 @@ class Main(object):
                 output_filename = '-'
             elif filename and '%' in output_filename:
                 pattern = output_filename
-                dirname, basename = os.path.split(filename)
-                noext = re.sub('\.\w+$', '', basename)
-                output_filename = pattern.replace('%', noext, 1)
-                if dirname:
-                    output_filename = '%s/%s' % (dirname, output_filename)
+                values = build_values_from_filename(filename)
+                classname = translator.build_classname(filename, properties.get('classname'))
+                values['c'] = classname
+                output_filename = parse_name_pattern(pattern, values)
             if output_dir:
                 basename = os.path.basename(output_filename)
                 output_filename = '%s/%s' % (output_dir, basename)

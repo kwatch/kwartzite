@@ -10,3 +10,4 @@ DELSPAN   = True    # delete dummy <span> tag
 DATTR     = 'kw:d'
 IDFLAG    = 'all'   # or 'upper', 'lower', 'none'
 ENCODING  = 'utf-8'
+CLASSNAME = '%u_%x'

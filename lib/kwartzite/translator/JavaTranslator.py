@@ -36,7 +36,7 @@ class JavaTranslator(Translator):
     def translate(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, context=None, nullobj=None, **kwargs):
         propget = self.properties.get
         if filename    is None:  filename    = template_info.filename
-        if classname   is None:  classname   = self.build_classname(filename, **kwargs)
+        if classname   is None:  classname   = propget('classname')
         if baseclass   is None:  baseclass   = propget('baseclass', 'Object')
         if encoding    is None:  encoding    = self.encoding
         if mainprog    is None:  mainprog    = propget('mainprog', True)
@@ -49,22 +49,10 @@ class JavaTranslator(Translator):
         return self.generate_code(template_info, filename=filename, classname=classname, baseclass=baseclass, encoding=encoding, mainprog=mainprog, package=package, interface=interface, context=context, nullobj=nullobj, **kwargs)
 
 
-    def build_classname(self, filename, prefix=None, postfix=None, **kwargs):
-        s = os.path.basename(filename)
-        #pos = s.rindex('.')
-        #if pos > 0: s = s[0:pos]
-        s = re.sub(r'[^\w]', '_', s)
-        if not prefix:  prefix  = self.properties.get('prefix')
-        if not postfix: postfix = self.properties.get('postfix')
-        if prefix:  s = prefix + s
-        if postfix: s = s + postfix
-        classname = s
-        return classname
-
-
     def generate_code(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, context=None, nullobj=None, **properties):
         stmt_list       = template_info.stmt_list
         elem_info_table = template_info.elem_info_table
+        classname = self.build_classname(filename, pattern=classname, **properties)
         buf = []
         extend = buf.extend
         if filename:

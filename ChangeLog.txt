@@ -3,6 +3,12 @@
 .?version:	$Rev$
 
 
+: rev.12 (2007-10-04)
+	.- [enhance] main.py: '-o' and '--classname' can contain pattern characters
+	.- [enhance] util.py: add camelize(), build_values_form_files(), parse_name_pattern()
+	.- [change] main.py: help message was added
+	.- [enhance] config.py: add CLASSNAME
+
 : rev.11 (2007-10-03)
 	.- [enhance] JavaTranslator.py, PythonTranslator.py: --nullobj support
 	.- [enhance] JavaTranslator.py, PythonTranslator.py: --context support

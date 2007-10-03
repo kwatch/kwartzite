@@ -5,7 +5,7 @@
 ###
 
 
-import re
+import os, re
 
 
 
@@ -61,6 +61,55 @@ _isword_pattern = re.compile('^\w+$')
 
 def isword(s):
     return bool(_isword_pattern.match(s))
+
+
+
+def camelize(string):
+    return ''.join([ s.capitalize() for s in re.split(r'[^a-zA-Z0-9]', string) ])
+
+
+
+def build_values_from_filename(filename):
+    dirname, basename = os.path.split(filename)
+    base, ext = os.path.splitext(basename)
+    values = { 'b':base, 'x':ext[1:], 'd':dirname, 'f':basename,
+               'u':re.sub(r'[^\w]', '_', base), }
+    return values
+
+
+
+def parse_name_pattern(pattern, values={}):
+    """
+    replace '%x' in pattern string with values['x'].
+    if 'x' is upper then value is camelized.
+    if 'x' is '%' then '%' is used. in other words, '%%' are replaced with '%'.
+    ex.
+      >>> values = {'c':'class', 'b':'base', 'f':'foo-bar-baz.html'}
+      >>> parse_name_pattern('<%c><%%><%x><%F>', values)
+      '<class><%><><FooBarBazHtml>'
+    """
+    i = pattern.find('%')
+    if i < 0:
+        return pattern
+    n = len(pattern)
+    buf = [ pattern[:i] ]
+    while i < n:
+        ch = pattern[i]
+        if ch == '%':
+            i += 1
+            if i == n:
+                buf.append('%')
+                break
+            ch = pattern[i]
+            if   ch == '%':     val = '%'
+            elif ch.isupper():  val = camelize(values.get(ch.lower()) or '')
+            else:               val = values.get(ch) or ''
+            if val:
+                buf.append(val)
+        else:
+            buf.append(ch)
+        i += 1
+    return ''.join(buf)
 
 
 
