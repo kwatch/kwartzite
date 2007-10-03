@@ -127,6 +127,7 @@ class JavaTranslator(Translator):
             '    public static String toStr(Object val) {\n'
             '        return val == null ? "" : val.toString();\n'
             '    }\n'
+            '\n'
             '    public static String toStr(String val) {\n'
             '        return val == null ? "" : val;\n'
             '    }\n'
@@ -145,30 +146,17 @@ class JavaTranslator(Translator):
 
 
     def expand_items(self, buf, stmt_list):
-        pos = 0
-        i = -1
         for item in stmt_list:
-            i += 1
             if isinstance(item, (str, unicode)):
-                pass
+                buf.extend(('        _buf.append("', q(item), '");\n', ))
+            elif isinstance(item, ElementInfo):
+                elem_info = item
+                buf.extend(('        elem', c(elem_info.name), '();\n', ))
+            elif isinstance(item, Expression):
+                expr = item
+                buf.extend(('        _buf.append(toStr(', expr.code, '));\n'))
             else:
-                if pos < i:
-                    buf.extend(('        _buf.append("',
-                                q(''.join(stmt_list[pos:i])),
-                                '");\n', ))
-                pos = i + 1
-                if isinstance(item, ElementInfo):
-                    elem_info = item
-                    buf.extend(("        elem", c(elem_info.name), "();\n", ))
-                elif isinstance(item, Expression):
-                    native_expr = item
-                    buf.extend(("        _buf.append(toStr(", native_expr.code, "));\n", ))
-                else:
-                    assert "** unreachable"
-        if pos <= i:
-            buf.extend(('        _buf.append("',
-                       q(''.join(stmt_list[pos:])),
-                       '");\n', ))
+                assert '** unreachabel'
 
 
     def expand_init(self, buf, elem_info):
@@ -194,8 +182,9 @@ class JavaTranslator(Translator):
             ))
         ## text_xxx
         if elem_info.cont_text_p():
+            assert len(elem_info.cont_stmts) == 1
             buf.extend((
-            '        text', c(name), ' = "', q(''.join(elem_info.cont_stmts)), '";\n'
+            '        text', c(name), ' = "', q(elem_info.cont_stmts[0]), '";\n'
             ))
         buf.extend((
             '    }\n',
@@ -256,12 +245,6 @@ class JavaTranslator(Translator):
         buf.append(
             '    }\n'
             )
-        ## text_xxx
-        #buf.extend((    '    public String text', c(name), ' = ', ))
-        #if elem_info.cont_text_p():
-        #    buf.extend(('"', q(''.join(elem_info.cont_stmts)), '";\n', ))
-        #else:
-        #    buf.append('null;\n');
 
 
     def expand_etag(self, buf, elem_info):

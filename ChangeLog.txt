@@ -2,6 +2,11 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.5 (2007-10-03)
+	.- [change] parser/__init__.py: add TemplateInfo#pack() which make stmt_list and elem_info.cont_stmts compact
+	.- [change] PythonTranslator.py: text_xxx is set even when elem_info.cont_text_p() is false
+	.- [change] default value of config.IDFLAG is changed from 'upper' to 'all'
+
 : rev.4 (2007-10-02)
 	.- [change] rename argument 'parent' of PythonTranslator#translate() into 'baseclass'
 	.- [enhance] add JavaTranslator

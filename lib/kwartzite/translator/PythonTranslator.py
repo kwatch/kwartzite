@@ -136,30 +136,17 @@ class PythonTranslator(Translator):
 
 
     def expand_items(self, buf, stmt_list):
-        pos = 0
-        i = -1
         for item in stmt_list:
-            i += 1
             if isinstance(item, (str, unicode)):
-                pass
+                buf.extend(("        _buf.append('''", q(item), "''')\n", ))
+            elif isinstance(item, ElementInfo):
+                elem_info = item
+                buf.extend(("        self.elem_", elem_info.name, "()\n", ))
+            elif isinstance(item, Expression):
+                expr = item
+                buf.extend(("        _buf.append(to_str(", expr.code, "))\n", ))
             else:
-                if pos < i:
-                    buf.extend(("        _buf.append('''",
-                                q(''.join(stmt_list[pos:i])),
-                                "''')\n", ))
-                pos = i + 1
-                if isinstance(item, ElementInfo):
-                    elem_info = item
-                    buf.extend(("        self.elem_", elem_info.name, "()\n", ))
-                elif isinstance(item, Expression):
-                    native_expr = item
-                    buf.extend(("        _buf.append(to_str(", native_expr.code, "))\n", ))
-                else:
-                    assert "** unreachable"
-        if pos <= i:
-            buf.extend(("        _buf.append('''",
-                       q(''.join(stmt_list[pos:])),
-                       "''')\n", ))
+                assert "** unreachable"
 
 
     def expand_init(self, buf, elem_info):
@@ -169,6 +156,8 @@ class PythonTranslator(Translator):
         if elem_info.cont_text_p():
             s = elem_info.cont_stmts[0]
             buf.extend(("        self.text_", name, " = '''", q(s), "'''\n", ))
+        else:
+            buf.extend(("        self.text_", name, " = None\n", ))
         ## attr_xxx
         buf.extend(('        self.attr_', name, ' = Attribute', ))
         attr_info = elem_info.attr_info
@@ -221,11 +210,14 @@ class PythonTranslator(Translator):
         buf.extend((    '    def cont_', name, '(self):\n', ))
         if elem_info.cont_text_p():
             buf.extend(('        self._buf.append(to_str(self.text_', name, '))\n', ))
-        elif elem_info.cont_stmts:
-            buf.extend(('        _buf = self._buf\n', ))
-            self.expand_items(buf, elem_info.cont_stmts)
         else:
-            buf.extend(('        pass\n', ))
+            buf.extend(('        _buf = self._buf\n', ))
+            buf.extend(('        if self.text_', name, ' is not None:\n'
+                        '            _buf.append(self.text_', name, ')\n', ))
+            if elem_info.cont_stmts:
+                return
+            buf.append( '            return\n')
+            self.expand_items(buf, elem_info.cont_stmts)
 
 
     def expand_etag(self, buf, elem_info):
