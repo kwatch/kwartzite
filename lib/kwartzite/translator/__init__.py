@@ -14,8 +14,10 @@ from kwartzite.util import parse_name_pattern, build_values_from_filename
 class Translator(object):
 
 
-    def __init__(self, encoding=None, **properties):
-        self.encoding = encoding
+    _property_descriptions = ()   # tuple of ('name', 'default', 'description')
+
+
+    def __init__(self, **properties):
         self.properties = properties
 
 

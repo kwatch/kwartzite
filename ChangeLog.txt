@@ -2,11 +2,15 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
-: rev.13 (2007-10-04)
-	.- [refactor] 'stag_info', 'etag_info', 'cont_stmts', 'elem_info' are renamed to 'stag', 'etag', 'cont', 'elem'
-	.- 
+: rev.14 (2007-10-04)
+	.- [enhance] main.py: '-ht name' and '-hp name' support
+	.- [enhance] util.py: add define_properties()
+	.- [change] PythonTranslator.py, JavaTranslator.py, TextParser.py: use define_properties()
 
-: rev.12 (2007-10-04)
+: rev.13 (2007-10-03)
+	.- [refactor] 'stag_info', 'etag_info', 'cont_stmts', 'elem_info' are renamed to 'stag', 'etag', 'cont', 'elem'
+
+: rev.12 (2007-10-03)
 	.- [enhance] main.py: '-o' and '--classname' can contain pattern characters
 	.- [enhance] util.py: add camelize(), build_values_form_files(), parse_name_pattern()
 	.- [change] main.py: help message was added
@@ -38,7 +42,7 @@
 	.- [enhance] JavaTranslator.py: nodeXxx support
 	.- [bugfix] main.py: output filename was wrong when filename is 'foo/bar.html'
 
-: rev.5 (2007-10-03)
+: rev.5 (2007-10-02)
 	.- [change] parser/__init__.py: add TemplateInfo#pack() which make stmt_list and elem_info.cont_stmts compact
 	.- [change] PythonTranslator.py: text_xxx is set even when elem_info.cont_text_p() is false
 	.- [change] default value of config.IDFLAG is changed from 'upper' to 'all'

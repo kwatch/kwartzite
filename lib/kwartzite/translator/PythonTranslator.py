@@ -6,7 +6,7 @@
 
 
 import os, re
-#import config
+import kwartzite.config as config
 from kwartzite.util import quote
 from kwartzite.parser.TextParser import ElementInfo, Expression
 from kwartzite.translator import Translator
@@ -26,24 +26,41 @@ def q(string):
 class PythonTranslator(Translator):
 
 
-    def translate(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, nullobj=None, **kwargs):
-        propget = self.properties.get
-        if filename    is None:  filename  = template_info.filename
-        if classname   is None:  classname = propget('classname')
-        if baseclass   is None:  baseclass = propget('baseclass', 'object')
-        if encoding    is None:  encoding  = self.encoding
-        if mainprog    is None:  mainprog  = propget('mainprog', True)
-        if context     is None:  context   = propget('context', True)
-        if nullobj     is None:  nullobj   = propget('nullobj', False)
-        self.nullobj = nullobj
+    _property_descriptions = (
+        ('classname' , config.CLASSNAME , 'classname pattern'),
+        ('baseclass' , 'object', 'parent class name'),
+        ('encoding'  , None    , 'encoding name'),
+        ('mainprog'  , True    , 'define main program or not'),
+        ('context'   , True    , 'use context object in constructor or not'),
+        ('nullobj'   , False   , 'use NULL object instead of None'),
+    )
+    define_properties(_property_descriptions)
+
+
+    def __init__(self, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, nullobj=None, **properties):
+        Translator.__init__(self, **properties)
+        if classname   is not None:  self.classname = classname
+        if baseclass   is not None:  self.baseclass = baseclass
+        if encoding    is not None:  self.encoding  = encoding
+        if mainprog    is not None:  self.mainprog  = mainprog
+        if context     is not None:  self.context   = context
+        if nullobj     is not None:  self.nullobj   = nullobj
         self.nullvalue = nullobj and 'NULL' or 'None'
-        return self.generate_code(template_info, filename=filename, classname=classname, baseclass=baseclass, encoding=encoding, mainprog=mainprog, context=context, nullobj=nullobj, **kwargs)
 
 
-    def generate_code(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, nullobj=None, **properties):
+    def translate(self, template_info, **properties):
+        def prop(name):
+            return properties.get(name) or getattr(self, name)
         stmt_list  = template_info.stmt_list
         elem_table = template_info.elem_table
+        filename   = properties.get('filename') or template_info.filename
+        classname  = properties.get('classname') or self.classname
         classname = self.build_classname(filename, pattern=classname, **properties)
+        baseclass  = self.baseclass
+        encoding   = self.encoding
+        mainprog   = self.mainprog
+        context    = self.context
+        nullobj    = self.nullobj
         buf = []
         extend = buf.extend
         if encoding:
@@ -52,21 +69,21 @@ class PythonTranslator(Translator):
             extend(('## generated from ', filename, '\n', ))
         extend((
             '\n'
-            'from kwartzite.attribute import Attribute\n',
-            ))
+            'from kwartzite.attribute import Attribute\n'
+            ,))
         if encoding:
             extend((
             'from kwartzite.util import escape_xml, generate_tostrfunc\n'
             'to_str = generate_tostrfunc(', repr(encoding), ')\n'
-            ))
+            ,))
         else:
             extend((
             'from kwartzite.util import escape_xml, to_str\n'
-            ))
+            ,))
         if self.nullobj:
             extend((
             'from kwartzite.util import ', self.nullvalue, '\n'
-            ))
+            ,))
         extend((
             'h = escape_xml\n'
             "__all__ = ['", classname, "', 'escape_xml', 'to_str', 'h', ]\n"
@@ -74,38 +91,38 @@ class PythonTranslator(Translator):
             '\n'
             'class ', classname, '(', baseclass, '):\n'
             '\n'
-            ))
+            ,))
         if context:
             extend((
             '    def __init__(self, **_context):\n'
-            '        for k, v in _context.iteritems():\n'
-            '            setattr(self, k, v)\n'
+            '        #for k, v in _context.iteritems():\n'
+            '        #    setattr(self, k, v)\n'
             '        self._context = _context\n'
             '        self._buf = []\n'
-            ))
+            ,))
         else:
             extend((
             '    def __init__(self):\n'
             '        self._buf = []\n'
-            ))
+            ,))
         for name, elem in elem_table.iteritems():
             extend(('        self.init_', name, '()\n', ))
         extend((
             '\n'
             '    def create_document(self):\n'
             '        _buf = self._buf\n'
-            ))
+            ,))
         self.expand_items(buf, stmt_list)
         extend((
             "        return ''.join(_buf)\n"
-            "\n",
-            ))
+            "\n"
+            ,))
         for name, elem in elem_table.iteritems():
             extend((
             "\n"
             "    ## element '", name, "'\n"
             "\n"
-            ))
+            ,))
             self.expand_init(buf, elem); buf.append("\n")
             if elem.directive.name == 'mark':
                 self.expand_elem(buf, elem); buf.append("\n")
@@ -119,11 +136,11 @@ class PythonTranslator(Translator):
             "    _stag_", name, " = stag_", name, "\n"
             "    _cont_", name, " = cont_", name, "\n"
             "    _etag_", name, " = etag_", name, "\n"
-                ))
+                ,))
             else:
                 extend((
             "    _init_", name, " = init_", name, "\n"
-                ))
+                ,))
             buf.append("\n")
         #extend((
         #    "\n"
@@ -138,7 +155,7 @@ class PythonTranslator(Translator):
             "if __name__ == '__main__':\n"
             "    print ", classname, "().create_document(),\n"
             "\n"
-            ))
+            ,))
         return ''.join(buf)
 
 
@@ -228,7 +245,7 @@ class PythonTranslator(Translator):
             '            self.etag_', name, '()\n'
             '        else:\n'
             '            self._buf.append(to_str(self.node_', name, '))\n'
-            ))
+            ,))
 
 
     def expand_stag(self, buf, elem):
@@ -236,16 +253,16 @@ class PythonTranslator(Translator):
         extend = buf.extend
         stag = elem.stag
         extend((
-            "    def stag_", name, "(self):\n",
-            ))
+            "    def stag_", name, "(self):\n"
+            ,))
         if stag.name:
             s = self.nullobj and (", "+self.nullvalue) or ""
             extend((
             "        _buf = self._buf\n"
             "        _buf.append('''", stag.head_space or "", "<", stag.name, "''')\n"
             "        self.attr_", name, ".append_to(_buf", s, ")\n"
-            "        _buf.append('''", stag.extra_space or "", stag.is_empty and "/>" or ">", q(stag.tail_space or ""), "''')\n",
-            ))
+            "        _buf.append('''", stag.extra_space or "", stag.is_empty and "/>" or ">", q(stag.tail_space or ""), "''')\n"
+            ,))
         else:
             s = (stag.head_space or '') + (stag.tail_space or '')
             if s:
@@ -275,25 +292,25 @@ class PythonTranslator(Translator):
         extend = buf.extend
         etag = elem.etag
         extend((
-            "    def etag_", name, "(self):\n",
-            ))
+            "    def etag_", name, "(self):\n"
+            ,))
         if not etag:
             extend((
             "        pass\n"
-            ))
+            ,))
         elif etag.name:
             extend((
             "        _buf = self._buf\n"
             "        _buf.append('''", etag.head_space or "", "</", etag.name,
-                                 ">", q(etag.tail_space or ""), "''')\n",
-            ))
+                                 ">", q(etag.tail_space or ""), "''')\n"
+            ,))
         else:
             s = (etag.head_space or '') + (etag.tail_space or '')
             if s:
                 extend((
-            "        self._buf.append('", q(s), "')\n",
-            ))
+            "        self._buf.append('", q(s), "')\n"
+            ,))
             else:
                 extend((
-            "        pass\n",
-            ))
+            "        pass\n"
+            ,))

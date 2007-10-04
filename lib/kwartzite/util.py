@@ -5,7 +5,7 @@
 ###
 
 
-import os, re
+import sys, os, re
 
 
 
@@ -173,3 +173,12 @@ class OrderedDict(dict):
         if other:
             for key, val in other.iteritems():
                 self[key] = value
+
+
+
+def define_properties(tuple_list, _locals=None):
+    if _locals is None:
+        _locals = sys._getframe(1).f_locals
+    for t in tuple_list:
+        name, value = t[0], t[1]
+        _locals[name] = value

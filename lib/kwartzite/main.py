@@ -39,26 +39,26 @@ class Main(object):
 
     def help(self):
         d = self.defaults
+        command = self.command
         t = (
             "pyKwartzite - designer-friendly template engine",
             "Release: %s" % kwartzite.RELEASE,
-            "Usage: %s [options] [template1 [template2...]]" % self.command,
+            "Usage: %s [options] [template1 [template2...]]" % command,
             "Options:",
             "  -h, --help :  help",
             "  -v         :  version",
             "  -n         :  no exec",
             "  -q         :  quiet mode",
             "  -a action  :  action (compile/parse/names) (default '%s')" % d['action'],
-            #"  -p name    :  parser name (default '%s')" % d['parser'],
+            "  -p name    :  parser name (text) (default '%s')" % d['parser'],
             "  -t name    :  translator name (python/java) (default '%s')" % d['translator'],
             "  -o file    :  output filename",
             "  -d dir     :  output directory",
-            "  --encoding=str  :  encoding",
-            "  --classname=str :  generated class name",
-            "  --baseclass=str :  base class name of generated class",
-            "  --dattr=str     :  directive attribute name (default '%s')" % config.DATTR,
-            "  --delspan={true|false} : delete dummy <span> tag (default %s)" % config.DELSPAN,
-            "  --idflag={all|upper|lower|none} : policy to select id name (default '%s')" % config.IDFLAG,
+            "",
+            "Available properties are shown by '-ht' or '-hp':",
+            "  $ %s -hp text      # show properties of TextParser" % command,
+            "  $ %s -ht python    # show properties of PythonTranslator" % command,
+            "  $ %s -ht java      # show properties of JavaTranslator" % command,
             "",
             "Option '-o' and '--classname' can contain the folowing patterns:",
             "  %f    filename  (ex. 'foo-bar-baz.html')",
@@ -72,6 +72,14 @@ class Main(object):
             "",
         )
         return "\n".join(t)
+
+
+    def property_descriptions(self, obj):
+        buf = []
+        buf.append("Available properties for %s class:\n" % obj.__class__.__name__)
+        for name, default, desc in obj._property_descriptions:
+            buf.append(' --%-13s : %s (default %s)\n' % (name+'=...', desc, repr(default)))
+        return ''.join(buf)
 
 
     def execute(self, args=None):
@@ -92,7 +100,8 @@ class Main(object):
         debug("filenames=%s\n" % repr(filenames))
 
         ## help, version
-        if options.get('h') or properties.get('help'):
+        flag_help = options.get('h') or properties.get('help')
+        if flag_help and not options.get('p') and not options.get('t'):
             print self.help(),
             return
         if options.get('v'):
@@ -111,6 +120,9 @@ class Main(object):
         if not parser_class:
             raise self._error("-p %s: unknown parser name." % parser_name)
         parser = parser_class(**properties)
+        if flag_help and options.get('p'):
+            print self.property_descriptions(parser),
+            return
 
         ## translator
         translator_name = options.get('t') or self.defaults['translator']
@@ -118,6 +130,9 @@ class Main(object):
         if not translator_class:
             raise self._error("-t %s: unknown translator name." % translator_name)
         translator = translator_class(**properties)
+        if flag_help and options.get('t'):
+            print self.property_descriptions(translator),
+            return
 
         ## output directory
         output_dir = options.get('d')

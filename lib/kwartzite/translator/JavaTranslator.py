@@ -6,7 +6,7 @@
 
 
 import os, re
-#import config
+import kwartzite.config as config
 from kwartzite.util import qquote
 from kwartzite.parser.TextParser import ElementInfo, Expression
 from kwartzite.translator import Translator
@@ -33,26 +33,44 @@ def c(name):
 class JavaTranslator(Translator):
 
 
-    def translate(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, context=None, nullobj=None, **kwargs):
-        propget = self.properties.get
-        if filename    is None:  filename    = template_info.filename
-        if classname   is None:  classname   = propget('classname')
-        if baseclass   is None:  baseclass   = propget('baseclass', 'Object')
-        if encoding    is None:  encoding    = self.encoding
-        if mainprog    is None:  mainprog    = propget('mainprog', True)
-        if package     is None:  package     = propget('package')
-        if interface   is None:  interface   = propget('interface')
-        if context     is None:  context     = propget('context', False)
-        if nullobj     is None:  nullobj     = propget('nullobj', False)
-        self.nullobj = nullobj
+    _property_descriptions = (
+        ('classname' , config.CLASSNAME, 'classname pattern'),
+        ('baseclass' , 'Object', 'parent class name'),
+        ('interface' , None    , 'interface name to implements'),
+        ('package'   , None    , 'package name'),
+        ('encoding'  , None    , 'encoding name'),
+        ('mainprog'  , True    , 'define main program or not'),
+        ('context'   , True    , 'use context object in constructor or not'),
+        ('nullobj'   , False   , 'use NULL object instead of None'),
+    )
+    define_properties(_property_descriptions)
+
+
+    def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, **properties):
+        if classname is not None   :  self.classname = classname
+        if baseclass is not None   :  self.baseclass = baseclass
+        if interface is not None   :  self.interface = interface
+        if package   is not None   :  self.package   = package
+        if encoding  is not None   :  self.encoding  = encoding
+        if mainprog  is not None   :  self.mainprog  = mainprog
+        if context   is not None   :  self.context   = context
+        if nullobj   is not None   :  self.nullobj   = nullobj
         self.nullvalue = nullobj and 'NULL' or 'null'
-        return self.generate_code(template_info, filename=filename, classname=classname, baseclass=baseclass, encoding=encoding, mainprog=mainprog, package=package, interface=interface, context=context, nullobj=nullobj, **kwargs)
 
 
-    def generate_code(self, template_info, filename=None, classname=None, baseclass=None, encoding=None, mainprog=None, package=None, interface=None, context=None, nullobj=None, **properties):
-        stmt_list       = template_info.stmt_list
+    def translate(self, template_info, **properties):
+        stmt_list  = template_info.stmt_list
         elem_table = template_info.elem_table
+        filename   = properties.get('filename') or template_info.filename
+        classname  = properties.get('classname') or self.classname
         classname = self.build_classname(filename, pattern=classname, **properties)
+        baseclass  = self.baseclass
+        interface  = self.interface
+        package    = self.package
+        encoding   = self.encoding
+        mainprog   = self.mainprog
+        context    = self.context
+        nullobj    = self.nullobj
         buf = []
         extend = buf.extend
         if filename:

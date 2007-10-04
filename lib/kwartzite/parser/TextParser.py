@@ -7,7 +7,7 @@
 
 import re
 import kwartzite.config as config
-from kwartzite.util import isword, OrderedDict
+from kwartzite.util import isword, OrderedDict, define_properties
 from kwartzite.parser import Parser, ParseError, TemplateInfo
 
 
@@ -167,11 +167,20 @@ class TextParser(Parser):
     """
 
 
+    _property_descriptions = (
+        ('dattr'    , config.DATTR    , 'directive attribute name'),
+        #('encoding' , config.ENCODING , 'encoding name'),
+        ('delspan'  , config.DELSPAN  , 'delete dummy <span> tag or not'),
+        ('idflag'   , config.IDFLAG   , 'marking detection policy (all/lower/upper/none)'),
+    )
+    define_properties(_property_descriptions)
+
+
     def __init__(self, dattr=None, encoding=None, idflag=None, delspan=None, escape=None, **properties):
         Parser.__init__(self, **properties)
         self.filename = None
         self.dattr    = dattr    is not None and dattr    or config.DATTR
-        self.encoding = encoding is not None and encoding or config.ENCODING
+        #self.encoding = encoding is not None and encoding or config.ENCODING
         self.idflag   = idflag   is not None and idflag   or config.IDFLAG
         if delspan is None: delspan = config.DELSPAN
         self.delspan  = delspan
