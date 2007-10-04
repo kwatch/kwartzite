@@ -7,7 +7,7 @@
 
 import os, re
 import kwartzite.config as config
-from kwartzite.util import qquote
+from kwartzite.util import qquote, define_properties
 from kwartzite.parser.TextParser import ElementInfo, Expression
 from kwartzite.translator import Translator
 
@@ -42,19 +42,21 @@ class JavaTranslator(Translator):
         ('mainprog'  , True    , 'define main program or not'),
         ('context'   , True    , 'use context object in constructor or not'),
         ('nullobj'   , False   , 'use NULL object instead of None'),
+        ('fragment'  , False   , 'define elementXxx() and contentXxx()'),
     )
     define_properties(_property_descriptions)
 
 
-    def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, **properties):
-        if classname is not None   :  self.classname = classname
-        if baseclass is not None   :  self.baseclass = baseclass
-        if interface is not None   :  self.interface = interface
-        if package   is not None   :  self.package   = package
-        if encoding  is not None   :  self.encoding  = encoding
-        if mainprog  is not None   :  self.mainprog  = mainprog
-        if context   is not None   :  self.context   = context
-        if nullobj   is not None   :  self.nullobj   = nullobj
+    def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, **properties):
+        if classname is not None:  self.classname = classname
+        if baseclass is not None:  self.baseclass = baseclass
+        if interface is not None:  self.interface = interface
+        if package   is not None:  self.package   = package
+        if encoding  is not None:  self.encoding  = encoding
+        if mainprog  is not None:  self.mainprog  = mainprog
+        if context   is not None:  self.context   = context
+        if nullobj   is not None:  self.nullobj   = nullobj
+        if fragment  is not None:  self.fragment  = fragment
         self.nullvalue = nullobj and 'NULL' or 'null'
 
 
@@ -71,6 +73,7 @@ class JavaTranslator(Translator):
         mainprog   = self.mainprog
         context    = self.context
         nullobj    = self.nullobj
+        fragment   = self.fragment
         buf = []
         extend = buf.extend
         if filename:
@@ -139,6 +142,9 @@ class JavaTranslator(Translator):
             self.expand_stag(buf, elem); buf.append("\n")
             self.expand_cont(buf, elem); buf.append("\n")
             self.expand_etag(buf, elem); buf.append("\n")
+            if not fragment: continue
+            self.expand_element(buf, elem); buf.append("\n")
+            self.expand_content(buf, elem); buf.append("\n")
         if mainprog:
             extend((
             '\n'
@@ -353,3 +359,38 @@ class JavaTranslator(Translator):
         buf.append(
             '    }\n'
             )
+
+
+    def _expand_element_or_content(self, buf, elem, kind):
+        s1, s2 = kind == 'element' and ('element', 'elem') or ('content', 'cont')
+        name = elem.name
+        extend = buf.extend
+        extend((
+            '    public void ', s1, c(name), '(Map _context, StringBuffer _buf) {\n'
+            '        this._context = _context;\n'
+            '        this._buf = _buf;\n'
+            '        ', s2, c(name), '();\n'
+            '    }\n'
+            #'\n'
+            '    public void ', s1, c(name), '(StringBuffer _buf) {\n'
+            '        ', s1, c(name), '(new HashMap(), _buf);\n'
+            '    }\n'
+            #'\n'
+            '    public String ', s1, c(name), '(Map _context) {\n'
+            '        StringBuffer _buf = new StringBuffer();\n'
+            '        ', s1, c(name), '(_context, _buf);\n'
+            '        return _buf.toString();\n'
+            '    }\n'
+            #'\n'
+            '    public String ', s1, c(name), '() {\n'
+            '        return ', s1, c(name), '(new HashMap());\n'
+            '    }\n'
+            ,))
+
+
+    def expand_element(self, buf, elem):
+        self._expand_element_or_content(buf, elem, 'element')
+
+
+    def expand_content(self, buf, elem):
+        self._expand_element_or_content(buf, elem, 'content')

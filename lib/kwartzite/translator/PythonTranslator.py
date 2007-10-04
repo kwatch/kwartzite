@@ -7,7 +7,7 @@
 
 import os, re
 import kwartzite.config as config
-from kwartzite.util import quote
+from kwartzite.util import quote, define_properties
 from kwartzite.parser.TextParser import ElementInfo, Expression
 from kwartzite.translator import Translator
 
@@ -33,11 +33,12 @@ class PythonTranslator(Translator):
         ('mainprog'  , True    , 'define main program or not'),
         ('context'   , True    , 'use context object in constructor or not'),
         ('nullobj'   , False   , 'use NULL object instead of None'),
+        ('fragment'  , False   , 'define element_xxx() and content_xxx()'),
     )
     define_properties(_property_descriptions)
 
 
-    def __init__(self, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, nullobj=None, **properties):
+    def __init__(self, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, **properties):
         Translator.__init__(self, **properties)
         if classname   is not None:  self.classname = classname
         if baseclass   is not None:  self.baseclass = baseclass
@@ -45,6 +46,7 @@ class PythonTranslator(Translator):
         if mainprog    is not None:  self.mainprog  = mainprog
         if context     is not None:  self.context   = context
         if nullobj     is not None:  self.nullobj   = nullobj
+        if fragment    is not None:  self.fragment  = fragment
         self.nullvalue = nullobj and 'NULL' or 'None'
 
 
@@ -61,6 +63,7 @@ class PythonTranslator(Translator):
         mainprog   = self.mainprog
         context    = self.context
         nullobj    = self.nullobj
+        fragment   = self.fragment
         buf = []
         extend = buf.extend
         if encoding:
@@ -123,13 +126,15 @@ class PythonTranslator(Translator):
             "    ## element '", name, "'\n"
             "\n"
             ,))
-            self.expand_init(buf, elem); buf.append("\n")
             if elem.directive.name == 'mark':
+                self.expand_init(buf, elem); buf.append("\n")
                 self.expand_elem(buf, elem); buf.append("\n")
                 self.expand_stag(buf, elem); buf.append("\n")
                 self.expand_cont(buf, elem); buf.append("\n")
                 self.expand_etag(buf, elem); buf.append("\n")
-            if elem.directive.name == 'mark':
+                if fragment:
+                    self.expand_element(buf, elem); buf.append("\n")
+                    self.expand_content(buf, elem); buf.append("\n")
                 extend((
             "    _init_", name, " = init_", name, "\n"
             "    _elem_", name, " = elem_", name, "\n"
@@ -138,6 +143,7 @@ class PythonTranslator(Translator):
             "    _etag_", name, " = etag_", name, "\n"
                 ,))
             else:
+                self.expand_init(buf, elem); buf.append("\n")
                 extend((
             "    _init_", name, " = init_", name, "\n"
                 ,))
@@ -314,3 +320,31 @@ class PythonTranslator(Translator):
                 extend((
             "        pass\n"
             ,))
+
+
+    def _expand_element_or_content(self, buf, elem, kind):
+        s1, s2 = kind == 'element' and ('element', 'elem') or ('content', 'cont')
+        name = elem.name
+        extend = buf.extend
+        extend((
+            "    def ", s1, "_", name, "(self, _context=None, _buf=None, **context):\n"
+            "        self._buf = _buf if _buf is not None else []\n"
+            "        self._context = _context if _context is not None else context\n"
+            "        self.", s2, "_", name, "()\n"
+            "        return ''.join(self._buf) if _buf is None else None\n"
+            #"        if _buf is None: self._buf = []\n"
+            #"        else:            self._buf = _buf\n"
+            #"        if _context is None: self._context = context\n"
+            #"        else:                self._context = _context\n"
+            #"        self.", s2, "_", name, "()\n"
+            #"        if _buf is None: return ''.join(self._buf)\n"
+            #"        else:            return None\n"
+            ,))
+
+
+    def expand_element(self, buf, elem):
+        self._expand_element_or_content(buf, elem, 'element')
+
+
+    def expand_content(self, buf, elem):
+        self._expand_element_or_content(buf, elem, 'content')

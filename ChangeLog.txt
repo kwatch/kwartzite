@@ -2,6 +2,9 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.15 (2007-10-04)
+	.- [enhance] PythonTranslator.py, JavaTranslator.py: --fragment support
+
 : rev.14 (2007-10-04)
 	.- [enhance] main.py: '-ht name' and '-hp name' support
 	.- [enhance] util.py: add define_properties()
