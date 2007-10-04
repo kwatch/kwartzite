@@ -2,6 +2,14 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.16 (2007-10-04)
+	.- [refactor] TextParser.py: TextParser#_fetch() returns prev_text as well as tag
+	.- [refactor] TextParser.py: remove TagInfo#prev_text
+	.- [refactor] TextParser.py: remove TextParser#_rest
+	.- [bugfix] main.py: print "\n" when exception raised
+	.- [bugfix] main.py: check whether file exists or not
+	.- [bugfix] main.py: print "updating" instead of "creating" when output file exists
+
 : rev.15 (2007-10-04)
 	.- [enhance] PythonTranslator.py, JavaTranslator.py: --fragment support
 

@@ -152,6 +152,12 @@ class Main(object):
         if not filenames:
             filenames = [ None ]
         for filename in filenames:
+            ## file check
+            if not noexec:
+                if not os.path.exists(filename):
+                    raise self._error("%s: file not founnd." % filename)
+                if not os.path.isfile(filename):
+                    raise self._error("%s: not a file." % filename)
             ## input/output filename
             input_filename = filename or '(stdin)'
             output_filename = options.get('o')
@@ -164,11 +170,11 @@ class Main(object):
                 values['c'] = classname
                 output_filename = parse_name_pattern(pattern, values)
             if output_dir:
-                basename = os.path.basename(output_filename)
                 output_filename = '%s/%s' % (output_dir, basename)
             ## parse and translate a template
             if output_filename != '-':
-                report("creating %s ..." % output_filename)
+                s = os.path.exists(output_filename) and 'updating' or 'creating'
+                report("%s %s ... " % (s, output_filename))
             if not noexec:
                 input = (filename and open(filename) or sys.stdin).read()
                 if action == 'compile':
@@ -288,7 +294,7 @@ def main():
     try:
         Main(sys.argv).execute()
     except kwartzite.BaseError, ex:
-        sys.stderr.write(str(ex))
+        sys.stderr.write(str(ex) + "\n")
         sys.exit(1)
 
 

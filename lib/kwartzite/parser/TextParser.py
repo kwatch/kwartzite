@@ -16,16 +16,15 @@ class TagInfo(object):
 
 
     def __init__(self, *args):
-        self.prev_text   = args[0]
-        self.string      = args[1]
-        self.head_space  = args[2]
-        self.is_etag     = args[3] # == '/' and '/' or ''
-        self.name        = args[4]
-        self.attr_str    = args[5]
-        self.extra_space = args[6]
-        self.is_empty    = args[7] # == '/' and '/' or ''
-        self.tail_space  = args[8]
-        self.linenum     = args[9]
+        self.string      = args[0]
+        self.head_space  = args[1]
+        self.is_etag     = args[2] # == '/' and '/' or ''
+        self.name        = args[3]
+        self.attr_str    = args[4]
+        self.extra_space = args[5]
+        self.is_empty    = args[6] # == '/' and '/' or ''
+        self.tail_space  = args[7]
+        self.linenum     = args[8]
 
 
     def set_name(self, tagname):
@@ -39,9 +38,9 @@ class TagInfo(object):
             for space, name, value in attr:
                 buf.extend((space, name, '="', value, '"', ))
             self.attr_str = ''.join(buf)
-        t = (self.head_space or '', '<', self.is_etag and '/' or '',
+        t = (self.head_space or '', self.is_etag and '</' or '<',
              self.name, self.attr_str, self.extra_space,
-             self.is_empty and '/' or '', '>', self.tail_space or '')
+             self.is_empty and '/>' or '>', self.tail_space or '')
         self.string = ''.join(t)
 
 
@@ -52,8 +51,8 @@ class TagInfo(object):
 
 
     def _inspect(self):
-        return [ self.prev_text, self.head_space, self.is_etag, self.name,
-                 self.attr_str, self.extra_space, self.is_empty, self.tail_space ]
+        return repr([ self.head_space, self.is_etag, self.name, self.attr_str,
+                      self.extra_space, self.is_empty, self.tail_space ])
 
 
 
@@ -207,16 +206,15 @@ class TextParser(Parser):
             linenum += text.count("\n") + prev_tagstr.count("\n")
             prev_tagstr = m.group(0)
             g = m.group
-            tag = TagInfo(text, g(0), head_space, g(2), g(3), g(4), g(5), g(6), g(7), linenum)
-            yield tag
-        self._rest = pos == 0 and input or input[pos:]
-        yield None
+            tag = TagInfo(g(0), head_space, g(2), g(3), g(4), g(5), g(6), g(7), linenum)
+            yield text, tag
+        rest = pos == 0 and input or input[pos:]
+        yield rest, None
 
 
     ## called from convert() and initialize converter object
     def _reset(self, input, filename):
         self.filename = filename
-        self._rest = None
         self._elem_names = []
         self.elem_table = OrderedDict() # {}
         generator = self._create_fetch_generator(input, TextParser.FETCH_PATTERN)
@@ -238,12 +236,11 @@ class TextParser(Parser):
             start_tagname = ""
             start_linenum = 1
         ##
-        tag = self._fetch()
+        text, tag = self._fetch()
         while tag:
             ## prev text
-            prev_text = tag.prev_text
-            if prev_text:
-                stmt_list.append(prev_text)
+            if text:
+                stmt_list.append(text)
             ## end tag
             if tag.is_etag:
                 if tag.name == start_tagname:
@@ -288,13 +285,13 @@ class TextParser(Parser):
                 else:
                     stmt_list.append(tag.string)
             ## continue while-loop
-            tag = self._fetch()
+            text, tag = self._fetch()
         ## control flow reaches here only if _parse() is called by parse()
         if start_tag:
             msg = "'<%s>' is not closed." % start_tagname
             raise self._parse_error(msg, start_tag.linenum)
-        if self._rest:
-            stmt_list.append(self._rest)
+        if text:
+            stmt_list.append(text)
         self.elem_table._keys = self._elem_names
         return None
 
