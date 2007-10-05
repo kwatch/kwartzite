@@ -1,0 +1,52 @@
+
+parameters:
+  - datadir:	testdata/test_main
+  - input_html: |+
+	<?xml version="1.0" encoding="utf-8" ?>
+	<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+		"http://www.w3.org/TR/html4/loose.dtd">
+	<html>
+	  <head>
+	    <title id="Title">Title</title>
+	    <meta http-equiv="Content-Type" content="text/html; charset=UTF8"/>
+	    <script type="text/javascript" language="javascript" src="js/jquery.js"></script>
+	  </head>
+	  <body>
+	    <h1>Section <span id="mark:secnum">99</span>: <span id="mark:sectitle" class="title">TITLE</span></h1>
+	    <p>Empty tag example.<br/><br></br>
+	       <a  href="/cgi-bin/foo.cgi?a=1&amp;b=&amp;c="
+	          onclick="javascript:alert('OK?');return false"
+		  id="anchor1">attr spaces and extra spaces example</a>
+	       <a  href="/cgi-bin/bar.cgi?a=1&amp;b=&amp;c="
+	          onclick="javascript:alert('NG?');return false"
+		  >another spaces example</a>
+	    </p>
+	    <table id="attr:table1" summary="items" style="background:#DDDDDD">
+	      <tr id="mark:list1" bgcolor="#FFCCCC" class="odd"
+	          title="&quot;&lt;A&amp;B&gt;&quot;">
+	        <td><a href="#" id="textattr:item1">foo</a></td>
+	      </tr>
+	      <tr id="dummy:d1" bgcolor="#CCCCFF" class="even">
+	        <td>bar</td>
+	      </tr>
+	    </table>
+	  </body>
+	</html>
+	
+	
+	
+recipes:
+
+  - product:	:testdata
+    ingreds:	[ $(datadir)/input.html ]
+    method*: |
+	sys 'python test_main.py COMMAND > hoge.sh'
+	sys 'sh hoge.sh'
+	rm_f 'hoge.sh'
+
+  - product:	$(datadir)/input.html
+    ingreds:	[ Rookbook.yaml ]
+    method*: |
+	mkdir_p datadir
+	File.open(@product, 'w') { |f| f.write(input_html) }
+	comment '$(datadir)/input.html is created.'

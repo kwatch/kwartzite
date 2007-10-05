@@ -85,9 +85,10 @@ class PythonTranslator(Translator):
             extend((
             'from kwartzite.util import ', self.nullvalue, '\n'
             ,))
+        s = nullobj and "'NULL'" or ''
         extend((
             'h = escape_xml\n'
-            "__all__ = ['", classname, "', 'escape_xml', 'to_str', 'h', ]\n"
+            "__all__ = ['", classname, "', 'escape_xml', 'to_str', 'h', ", s, "]\n"
             '\n'
             '\n'
             'class ', classname, '(', baseclass, '):\n'

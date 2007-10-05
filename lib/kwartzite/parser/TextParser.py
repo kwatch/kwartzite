@@ -449,7 +449,7 @@ class BaseParser(Parser):
     def _handle_directive_attr(self, directive, elem, stmt_list):
         self._check_mark_directive(directive, elem, stmt_list)
         self.__handle_directive_attr(directive, elem, stmt_list)
-        if not stag.is_empty:
+        if not elem.stag.is_empty:
             if elem.cont:
                 stmt_list.extend(elem.cont)
             stmt_list.append(elem.etag.to_string())

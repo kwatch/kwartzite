@@ -26,7 +26,9 @@ class CommandOptionError(kwartzite.BaseError):
 class Main(object):
 
 
-    def __init__(self, sys_argv=None):
+    def __init__(self, sys_argv=None, stdout=None, stderr=None):
+        self.stdout = stdout is None and sys.stdout or stdout
+        self.stderr = stderr is None and sys.stderr or stderr
         if sys_argv is None:
             sys_argv = sys.argv
         self.command = os.path.basename(sys_argv[0])
@@ -58,6 +60,7 @@ class Main(object):
             "",
             "Available properties are shown by '-ht' or '-hp':",
             "  $ %s -hp text      # show properties of TextParser" % command,
+            "  $ %s -hp xml       # show properties of XmlParser" % command,
             "  $ %s -ht python    # show properties of PythonTranslator" % command,
             "  $ %s -ht java      # show properties of JavaTranslator" % command,
             "",
@@ -93,7 +96,7 @@ class Main(object):
 
         ## debug
         if options.get('D'):
-            def debug(msg): sys.stderr.write("*** debug: " + msg)
+            def debug(msg): self.stderr.write("*** debug: " + msg)
         else:
             def debug(msg): pass
         debug("options=%s\n" % repr(options))
@@ -103,10 +106,10 @@ class Main(object):
         ## help, version
         flag_help = options.get('h') or properties.get('help')
         if flag_help and not options.get('p') and not options.get('t'):
-            print self.help(),
+            self.stdout.write(self.help())
             return
         if options.get('v'):
-            print kwartzite.RELEASE
+            self.stdout.write(kwartzite.RELEASE + "\n")
             return
 
         ## action
@@ -122,7 +125,7 @@ class Main(object):
             raise self._error("-p %s: unknown parser name." % parser_name)
         parser = parser_class(**properties)
         if flag_help and options.get('p'):
-            print self.property_descriptions(parser),
+            self.stdout.write(self.property_descriptions(parser))
             return
 
         ## translator
@@ -132,7 +135,7 @@ class Main(object):
             raise self._error("-t %s: unknown translator name." % translator_name)
         translator = translator_class(**properties)
         if flag_help and options.get('t'):
-            print self.property_descriptions(translator),
+            self.stdout.write(self.property_descriptions(translator))
             return
 
         ## output directory
@@ -149,7 +152,7 @@ class Main(object):
         if quiet:
             def report(msg): pass
         else:
-            def report(msg): sys.stderr.write(msg)
+            def report(msg): self.stderr.write(msg)
         if not filenames:
             filenames = [ None ]
         for filename in filenames:
@@ -171,13 +174,13 @@ class Main(object):
                 values['c'] = classname
                 output_filename = parse_name_pattern(pattern, values)
             if output_dir:
-                output_filename = '%s/%s' % (output_dir, basename)
+                output_filename = '%s/%s' % (output_dir, output_filename)
             ## parse and translate a template
             if output_filename != '-':
                 s = os.path.exists(output_filename) and 'updating' or 'creating'
                 report("%s %s ... " % (s, output_filename))
             if not noexec:
-                input = (filename and open(filename) or sys.stdin).read()
+                input = (filename and open(filename) or self.stdin).read()
                 if action == 'compile':
                     template_info = parser.parse(input, input_filename)
                     output = translator.translate(template_info)
@@ -194,7 +197,7 @@ class Main(object):
             ## output
             if not noexec:
                 if output_filename == '-':
-                    sys.stdout.write(output)
+                    self.stdout.write(output)
                 else:
                     open(output_filename, 'w').write(output)
             if output_filename != '-':
@@ -271,6 +274,8 @@ class Main(object):
                     elif ch in optional:
                         options[ch] = optstr[j+1:] or True
                         break
+                    else:
+                        raise self._error("-%s: unknown option." % ch)
             ## continue while-loop
             i += 1
         ## return
@@ -291,11 +296,13 @@ class Main(object):
 
 
 
-def main():
+def main(sys_argv=None, stdout=None, stderr=None):
+    if sys_argv is None: sys_argv = sys.argv
     try:
-        Main(sys.argv).execute()
+        Main(sys_argv, stdout=stdout, stderr=stderr).execute()
     except kwartzite.BaseError, ex:
-        sys.stderr.write(str(ex) + "\n")
+        stderr = stderr is None and sys.stderr or stderr
+        stderr.write(str(ex) + "\n")
         sys.exit(1)
 
 

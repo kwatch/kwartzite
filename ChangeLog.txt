@@ -2,6 +2,13 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.18 (2007-10-05)
+	.- [enhance] test_main.py: add 'test/test_main.py'
+	.- [enhance] main.py: 'stdout' and 'stderr' arguments support for Main()
+	.- [bugfix] main.py: raise error when unknown option found
+	.- [bugfix] TextParser.py: bug fixed in _handle_directive_attr()
+	.- [bugfix] PythonTranslator.py: changed to import NULL when --nullobj
+
 : rev.17 (2007-10-05)
 	.- [enhance] XmlParser.py: added
 	.- [enhance] main.py: '-p xml' support
