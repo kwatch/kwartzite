@@ -24,7 +24,7 @@ EXPECTED_TEXT_JAVA   = open(DATA_DIR + '/test_text_java.expected').read()
 EXPECTED_XML_PYTHON  = open(DATA_DIR + '/test_xml_python.expected').read()
 EXPECTED_XML_JAVA    = open(DATA_DIR + '/test_xml_java.expected').read()
 
-PYTHON_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes'
+PYTHON_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes --attrobj=False'
 JAVA_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --interface=kwartzite.Template --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes'
 
 

@@ -81,8 +81,11 @@ class Main(object):
     def property_descriptions(self, obj):
         buf = []
         buf.append("Available properties for %s class:\n" % obj.__class__.__name__)
-        for name, default, desc in obj._property_descriptions:
-            buf.append(' --%-13s : %s (default %s)\n' % (name+'=...', desc, repr(default)))
+        #for name, desc in obj._property_descriptions:
+        for name, argtype, desc in obj._property_descriptions:
+            value = getattr(obj, name, None)
+            s = '--%s=%s' % (name, argtype)
+            buf.append(' %-15s : %s (default %s)\n' % (s, desc, repr(value)))
         return ''.join(buf)
 
 

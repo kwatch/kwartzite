@@ -3,6 +3,11 @@
 .?version:	$Rev$
 
 
+: rev.20 (2007-10-05)
+	.- [enhance] PythonTranslator.py: --attrobj support
+	.- [change] main.py, PythonTranslator.py, JavaTranslator.py, TextParser.py: _property_description changed to keep value type, not default vaue
+	.- [refactor] PythonTranslator.py: add expand_attr() method
+
 : rev.19 (2007-10-05)
 	.- [enhance] attribute.py: attribute class keeps spaces
 	.- [enhance] PythonTranslator.py: attribute space support

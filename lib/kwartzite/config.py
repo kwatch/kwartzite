@@ -9,5 +9,14 @@ NO_ETAGS  = [ 'input', 'img' ,'br', 'hr', 'meta', 'link' ]   # end-tag is omitta
 DELSPAN   = True    # delete dummy <span> tag
 DATTR     = 'kw:d'
 IDFLAG    = 'all'   # or 'upper', 'lower', 'none'
-ENCODING  = 'utf-8'
+ENCODING  = None    # or 'utf-8'
+
 CLASSNAME = '%u_%x'
+BASECLASS = None
+INTERFACE = None
+PACKAGE   = None
+MAINPROG  = True
+CONTEXT   = True
+NULLOBJ   = False
+FRAGMENT  = False
+ATTROBJ   = None

@@ -176,9 +176,16 @@ class OrderedDict(dict):
 
 
 
-def define_properties(tuple_list, _locals=None):
+import kwartzite.config
+
+
+def define_properties(tuple_list, _locals=None, **kwargs):
     if _locals is None:
         _locals = sys._getframe(1).f_locals
+    config = kwartzite.config
     for t in tuple_list:
-        name, value = t[0], t[1]
+        name = t[0]
+        value = getattr(config, name.upper(), None)
+        if value is None and kwargs.has_key(name):
+            value = kwargs[name]
         _locals[name] = value

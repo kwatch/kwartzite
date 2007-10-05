@@ -228,10 +228,12 @@ class BaseParser(Parser):
 
 
     _property_descriptions = (
-        ('dattr'    , config.DATTR    , 'directive attribute name'),
-        ('encoding' , config.ENCODING , 'encoding name'),
-        ('delspan'  , config.DELSPAN  , 'delete dummy <span> tag or not'),
-        ('idflag'   , config.IDFLAG   , 'marking detection policy (all/lower/upper/none)'),
+        ('dattr'    , 'str'  , 'directive attribute name'),
+        ('encoding' , 'str'  ,  'encoding name'),
+        ('delspan'  , 'bool' , 'delete dummy <span> tag or not'),
+        #('idflag'   , 'str'  , 'marking detection policy (all/lower/upper/none)'),
+        ('idflag'   , '{all|upper|lower|none}'  , 'marking detection policy'),
+        #('idflag'   , 'all/lower/upper/none'  , 'marking detection policy'),
     )
     define_properties(_property_descriptions)
 

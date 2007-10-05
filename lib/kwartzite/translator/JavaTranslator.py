@@ -34,17 +34,18 @@ class JavaTranslator(Translator):
 
 
     _property_descriptions = (
-        ('classname' , config.CLASSNAME, 'classname pattern'),
-        ('baseclass' , 'Object', 'parent class name'),
-        ('interface' , None    , 'interface name to implements'),
-        ('package'   , None    , 'package name'),
-        ('encoding'  , None    , 'encoding name'),
-        ('mainprog'  , True    , 'define main program or not'),
-        ('context'   , True    , 'use context object in constructor or not'),
-        ('nullobj'   , False   , 'use NULL object instead of None'),
-        ('fragment'  , False   , 'define elementXxx() and contentXxx()'),
+        ('classname' , 'str' , 'classname pattern'),
+        ('baseclass' , 'str' , 'parent class name'),
+        ('interface' , 'str' , 'interface name to implements'),
+        ('package'   , 'str' , 'package name'),
+        ('encoding'  , 'str' , 'encoding name'),
+        ('mainprog'  , 'bool', 'define main program or not'),
+        ('context'   , 'bool', 'use context object in constructor or not'),
+        ('nullobj'   , 'bool', 'use NULL object instead of None'),
+        ('fragment'  , 'bool', 'define elementXxx() and contentXxx()'),
     )
-    define_properties(_property_descriptions)
+    define_properties(_property_descriptions, baseclass='Object')
+    if locals()['baseclass'] == 'object': locals()['baseclass'] = 'Object'
 
 
     def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, **properties):
