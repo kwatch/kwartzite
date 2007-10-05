@@ -2,6 +2,17 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.17 (2007-10-05)
+	.- [enhance] XmlParser.py: added
+	.- [enhance] main.py: '-p xml' support
+	.- [change] TextParser.py: BaseParser class is splitted form TextParser class
+	.- [change] TextParser.py: TagInfo and AttrInfo are changed
+	.- [change] TextParser.py: rename _reset() to _setup()
+	.- [change] TextParser.py: add _teardown()
+	.- [change] TextParser.py: AttrInfo is created in TagInfo#__init__()
+	.- [bugfix] util.py: fixed bugs about escape_xml()
+	.- [change] TextParser.py: add TagInfo.to_string()
+
 : rev.16 (2007-10-04)
 	.- [refactor] TextParser.py: TextParser#_fetch() returns prev_text as well as tag
 	.- [refactor] TextParser.py: remove TagInfo#prev_text

@@ -7,7 +7,7 @@
 
 import re
 import kwartzite.config as config
-from kwartzite.util import isword, OrderedDict, define_properties
+from kwartzite.util import escape_xml, h, isword, OrderedDict, define_properties
 from kwartzite.parser import Parser, ParseError, TemplateInfo
 
 
@@ -15,33 +15,43 @@ from kwartzite.parser import Parser, ParseError, TemplateInfo
 class TagInfo(object):
 
 
-    def __init__(self, *args):
-        self.string      = args[0]
-        self.head_space  = args[1]
-        self.is_etag     = args[2] # == '/' and '/' or ''
-        self.name        = args[3]
-        self.attr_str    = args[4]
-        self.extra_space = args[5]
-        self.is_empty    = args[6] # == '/' and '/' or ''
-        self.tail_space  = args[7]
-        self.linenum     = args[8]
+    def __init__(self, tagname, attr, is_etag=None, is_empty=None, linenum=None,
+                 string=None, head_space=None, tail_space=None, extra_space=None):
+        self.name        = tagname
+        self.attr        = AttrInfo(attr)
+        self.is_etag     = is_etag and '/' or ''
+        self.is_empty    = is_empty and '/' or ''
+        self.linenum     = linenum
+        self.string      = string
+        self.head_space  = head_space
+        self.tail_space  = tail_space
+        self.extra_space = extra_space
+        #if isinstance(attr, (str, unicode)):
+        #    self.attr_str = attr
+        #elif isinstance(attr, (tuple, list)):
+        #    self.attr_str = ''.join([ ' %s="%s"' % (t[0], t[1]) for t in attr ])
+        #elif isinstance(attr, dict):
+        #    self.attr_str = ''.join([ ' %s="%s"' % (k, v) for k, v in attr.iteritems() ])
+        #else:
+        #    self.attr_str = attr
 
 
-    def set_name(self, tagname):
-        self.name = tagname
-        self.rebuild_string()
+    def set_attr(self, attr):
+        self.attr = attr
+        self.rebuild_string(attr)
 
 
-    def rebuild_string(self, attr=None):
-        if attr:
-            buf = []
-            for space, name, value in attr:
-                buf.extend((space, name, '="', value, '"', ))
-            self.attr_str = ''.join(buf)
-        t = (self.head_space or '', self.is_etag and '</' or '<',
-             self.name, self.attr_str, self.extra_space,
-             self.is_empty and '/>' or '>', self.tail_space or '')
-        self.string = ''.join(t)
+#    def rebuild_string(self, attr=None):
+#        if attr:
+#            buf = []
+#            for space, name, value in attr:
+#                buf.extend((space, name, '="', value, '"', ))
+#            self.attr_str = ''.join(buf)
+#        t = (self.head_space or '', self.is_etag and '</' or '<',
+#             self.name, self.attr_str or '', self.extra_space or '',
+#             self.is_empty and '/>' or '>', self.tail_space or '')
+#        self.string = ''.join(t)
+#        return self.string
 
 
     def clear_as_dummy_tag(self):      # delete <span> tag
@@ -50,27 +60,79 @@ class TagInfo(object):
             self.head_space = self.tail_space = None
 
 
-    def _inspect(self):
-        return repr([ self.head_space, self.is_etag, self.name, self.attr_str,
-                      self.extra_space, self.is_empty, self.tail_space ])
+#    def _inspect(self):
+#        return repr([ self.head_space, self.is_etag, self.name, self.attr_str,
+#                      self.extra_space, self.is_empty, self.tail_space ])
+
+
+    def _to_string(self):
+        buf = [self.head_space or '', self.is_etag and '</' or '<', self.name]
+        for space, name, value in self.attr:
+            buf.extend((space, name, '="', value, '"', ))
+        buf.extend((self.extra_space or '', self.is_empty and '/>' or '>', self.tail_space or ''))
+        return ''.join(buf)
+
+
+    def to_string(self):
+        if not self.string:
+            self.string = self._to_string()
+        return self.string
+
+
+    #__repr__ = to_string
+    def __repr__(self):
+        buf = [self.head_space or '', self.is_etag and '</' or '<', self.name]
+        for space, name, value in self.attr:
+            buf.extend((space, name, '="', value, '"', ))
+        if self.linenum is not None: buf.extend((' linenum="', str(self.linenum), '"'))
+        buf.extend((self.extra_space or '', self.is_empty and '/>' or '>', self.tail_space or ''))
+        return ''.join(buf)
 
 
 
 class AttrInfo(object):
 
 
-    _pattern = re.compile(r'(\s+)([-:_\w]+)="([^"]*?)"')
-
-
-    def __init__(self, attr_str):
+    def __init__(self, arg=None, escape=False):
         self.names  = names  = []
         self.values = values = {}
         self.spaces = spaces = {}
+        if arg is not None:
+            if isinstance(arg, (str, unicode)):
+                self.parse_str(arg)
+            elif isinstance(arg, (tuple, list)):
+                self.parse_tuples(arg)
+            elif isinstance(arg, dict):
+                self.parse_dict(arg)
+
+
+    _pattern = re.compile(r'(\s+)([-:_\w]+)="([^"]*?)"')
+
+
+    def parse_str(self, attr_str, escape=False):
         for m in AttrInfo._pattern.finditer(attr_str):
             space = m.group(1)
             name  = m.group(2)
             value = m.group(3)
-            self.set(name, value, space)
+            self.set(name, value, space, escape)
+
+
+    def parse_tuples(self, tuples, escape=False):
+        for t in tuples:
+            n = len(t)
+            if n == 2:
+                name, value = t
+                space = ' '
+            elif n == 3:
+                space, name, value = t
+            else:
+                assert False, "** t=%s" % repr(t)
+            self.set(name, value, space, escape)
+
+
+    def parse_dict(self, dictionary, escape=False):
+        for name, value in dictionary.iteritems():
+            self.set(name, value, ' ', escape)
 
 
     def has(self, name):
@@ -89,7 +151,10 @@ class AttrInfo(object):
         return self.values.get(name, default)
 
 
-    def set(self, name, value, space=' '):
+    def set(self, name, value, space=' ', escape=False):
+        if escape:
+            name  = escape_xml(name)
+            value = escape_xml(value)
         if not self.values.has_key(name):
             self.names.append(name)
             self.spaces[name] = space
@@ -117,10 +182,10 @@ class ElementInfo(object):
 
 
     def __init__(self, stag, etag, cont_stmts, attr):
-        self.stag    = stag      # TagInfo
-        self.etag    = etag      # TagInfo
-        self.cont   = cont_stmts     # list of Statement
-        self.attr    = attr      # AttrInfo
+        self.stag = stag      # TagInfo
+        self.etag = etag      # TagInfo
+        self.cont = cont_stmts     # list of Statement
+        self.attr = attr      # AttrInfo
         self.name = None
         self.directive = None
 
@@ -159,16 +224,12 @@ class Directive(object):
 
 
 
-class TextParser(Parser):
-    """
-    convert presentation data (html) into a list of Statement.
-    notice that TextConverter class hanlde html file as text format, not html format.
-    """
+class BaseParser(Parser):
 
 
     _property_descriptions = (
         ('dattr'    , config.DATTR    , 'directive attribute name'),
-        #('encoding' , config.ENCODING , 'encoding name'),
+        ('encoding' , config.ENCODING , 'encoding name'),
         ('delspan'  , config.DELSPAN  , 'delete dummy <span> tag or not'),
         ('idflag'   , config.IDFLAG   , 'marking detection policy (all/lower/upper/none)'),
     )
@@ -178,53 +239,27 @@ class TextParser(Parser):
     def __init__(self, dattr=None, encoding=None, idflag=None, delspan=None, escape=None, **properties):
         Parser.__init__(self, **properties)
         self.filename = None
-        self.dattr    = dattr    is not None and dattr    or config.DATTR
-        #self.encoding = encoding is not None and encoding or config.ENCODING
-        self.idflag   = idflag   is not None and idflag   or config.IDFLAG
-        if delspan is None: delspan = config.DELSPAN
-        self.delspan  = delspan
+        if dattr    is not None:  self.dattr = dattr
+        if encoding is not None:  self.encoding = encoding
+        if idflag   is not None:  self.idflag = idflag
+        if delspan  is not None:  self.delspan = delspan
 
 
-    #FETCH_PATTERN = re.compile(r'(^[ \t]*)?<(/?)([-:_\w]+)((?:\s+[-:_\w]+="[^"]*?")*)(\s*)(/?)>([ \t]*\r?\n)?')
-    FETCH_PATTERN = re.compile(r'([ \t]*)<(/?)([-:_\w]+)((?:\s+[-:_\w]+="[^"]*?")*)(\s*)(/?)>([ \t]*\r?\n)?')
-
-
-    def _create_fetch_generator(self, input, pattern):
-        pos = 0
-        linenum = 1
-        linenum_delta = 0
-        prev_tagstr = ''
-        for m in pattern.finditer(input):
-            start = m.start()
-            if start == 0 or input[start-1] == "\n":  # beginning of line
-                head_space = m.group(1)
-            else:
-                head_space = None
-                start += len(m.group(1))
-            text = input[pos:start]
-            pos = m.end()
-            linenum += text.count("\n") + prev_tagstr.count("\n")
-            prev_tagstr = m.group(0)
-            g = m.group
-            tag = TagInfo(g(0), head_space, g(2), g(3), g(4), g(5), g(6), g(7), linenum)
-            yield text, tag
-        rest = pos == 0 and input or input[pos:]
-        yield rest, None
-
-
-    ## called from convert() and initialize converter object
-    def _reset(self, input, filename):
+    def _setup(self, input, filename):
         self.filename = filename
         self._elem_names = []
         self.elem_table = OrderedDict() # {}
-        generator = self._create_fetch_generator(input, TextParser.FETCH_PATTERN)
-        self._fetch = generator.next
+
+
+    def _teardown(self):
+        self.elem_table._keys = self._elem_names
 
 
     def parse(self, input, filename=''):
-        self._reset(input, filename)
+        self._setup(input, filename)
         stmt_list = []
         self._parse(stmt_list)
+        self._teardown()
         return TemplateInfo(stmt_list, self.elem_table, filename)
 
 
@@ -246,10 +281,10 @@ class TextParser(Parser):
                 if tag.name == start_tagname:
                     return tag
                 else:
-                    stmt_list.append(tag.string)
+                    stmt_list.append(tag.to_string())
             ## empty tag
             elif tag.is_empty or self._skip_etag_p(tag.name):
-                attr = AttrInfo(tag.attr_str)
+                attr = tag.attr
                 directive = self._get_directive(attr, tag)
                 if directive:
                     directive.linenum = tag.linenum
@@ -262,10 +297,10 @@ class TextParser(Parser):
                     elem = self._create_elem(stag, etag, cont, attr)
                     self._handle_directive(directive, elem, stmt_list)
                 else:
-                    stmt_list.append(tag.string)
+                    stmt_list.append(tag.to_string())
             ## start tag
             else:
-                attr = AttrInfo(tag.attr_str)
+                attr = tag.attr
                 directive = self._get_directive(attr, tag)
                 if directive:
                     directive.linenum = tag.linenum
@@ -279,11 +314,11 @@ class TextParser(Parser):
                     self._handle_directive(directive, elem, stmt_list)
                 elif tag.name == start_tagname:
                     stag = tag
-                    stmt_list.append(stag.string)
+                    stmt_list.append(stag.to_string())
                     etag = self._parse(stmt_list, stag)  # recursive call
-                    stmt_list.append(etag.string)
+                    stmt_list.append(etag.to_string())
                 else:
-                    stmt_list.append(tag.string)
+                    stmt_list.append(tag.to_string())
             ## continue while-loop
             text, tag = self._fetch()
         ## control flow reaches here only if _parse() is called by parse()
@@ -292,7 +327,6 @@ class TextParser(Parser):
             raise self._parse_error(msg, start_tag.linenum)
         if text:
             stmt_list.append(text)
-        self.elem_table._keys = self._elem_names
         return None
 
 
@@ -324,12 +358,12 @@ class TextParser(Parser):
             value = attr.get(value)
             if not value:
                 attr.delete(self.dattr)
-                tag.rebuild_string(attr)
+                tag.string = None #tag.rebuild_string(attr)
                 return None
             m = re.match(r'\w+:', value)
             if m:
                 attr.delete(self.dattr)
-                tag.rebuild_string(attr)
+                tag.string = None #tag.rebuild_string(attr)
                 directive_name = m.group(0)[0:-1]
                 directive_arg  = value[len(directive_name)+1:]
                 return Directive(directive_name, directive_arg, self.dattr, value)
@@ -340,7 +374,7 @@ class TextParser(Parser):
             m = re.match(r'\w+:', value)
             if m:
                 attr.delete('id')  # remove 'id' attribute
-                tag.rebuild_string(attr)
+                tag.string = None #tag.rebuild_string(attr)
                 directive_name = m.group(0)[0:-1]
                 directive_arg  = value[len(directive_name)+1:]
                 return Directive(directive_name, directive_arg, 'id', value)
@@ -393,13 +427,13 @@ class TextParser(Parser):
 
     def _handle_directive_text(self, directive, elem, stmt_list):
         self._check_mark_directive(directive, elem, stmt_list)
-        stmt_list.append(elem.stag.string)
+        stmt_list.append(elem.stag.to_string())
         self.__handle_directive_text(directive, elem, stmt_list)
 
 
     def __handle_directive_text(self, directive, elem, stmt_list):
         expr = Expression(None, name=directive.arg, kind='text')
-        stmt_list.extend((expr, elem.etag.string, ))
+        stmt_list.extend((expr, elem.etag.to_string(), ))
 
 
     def __handle_directive_attr(self, directive, elem, stmt_list):
@@ -418,7 +452,7 @@ class TextParser(Parser):
         if not stag.is_empty:
             if elem.cont:
                 stmt_list.extend(elem.cont)
-            stmt_list.append(elem.etag.string)
+            stmt_list.append(elem.etag.to_string())
 
 
     def _handle_directive_textattr(self, directive, elem, stmt_list):
@@ -435,11 +469,55 @@ class TextParser(Parser):
 
     def _handle_directive_value(self, directive, elem, stmt_list):
         code = directive.arg
-        stmt_list.append(elem.stag.string)
+        stmt_list.append(elem.stag.to_string())
         stmt_list.append(Expression(code))
-        stmt_list.append(elem.etag.string)
+        stmt_list.append(elem.etag.to_string())
 
 
     def _handle_directive_dummy(self, directive, elem, stmt_list):
         pass   # ignore element
 
+
+
+class TextParser(BaseParser):
+    """
+    convert presentation data (html) into a list of Statement.
+    notice that TextConverter class hanlde html file as text format, not html format.
+    """
+
+    #FETCH_PATTERN = re.compile(r'(^[ \t]*)?<(/?)([-:_\w]+)((?:\s+[-:_\w]+="[^"]*?")*)(\s*)(/?)>([ \t]*\r?\n)?')
+    FETCH_PATTERN = re.compile(r'([ \t]*)<(/?)([-:_\w]+)((?:\s+[-:_\w]+="[^"]*?")*)(\s*)(/?)>([ \t]*\r?\n)?')
+
+
+    def _create_fetch_generator(self, input, pattern):
+        pos = 0
+        linenum = 1
+        linenum_delta = 0
+        prev_tagstr = ''
+        column = None
+        for m in pattern.finditer(input):
+            start = m.start()
+            if start == 0 or input[start-1] == "\n":  # beginning of line
+                head_space = m.group(1)
+            else:
+                head_space = None
+                start += len(m.group(1))
+            text = input[pos:start]
+            pos = m.end()
+            linenum += text.count("\n") + prev_tagstr.count("\n")
+            prev_tagstr = m.group(0)
+            g = m.group
+            string, is_etag, tagname, attr_str, extra_space, is_empty, tail_space = \
+                g(0), g(2), g(3), g(4), g(5), g(6), g(7)
+            tag = TagInfo(tagname, attr_str, is_etag, is_empty, linenum,
+                          string, head_space, tail_space, extra_space)
+            yield text, tag
+        rest = pos == 0 and input or input[pos:]
+        yield rest, None
+
+
+    ##
+    def _setup(self, input, filename):
+        BaseParser._setup(self, input, filename)
+        generator = self._create_fetch_generator(input, TextParser.FETCH_PATTERN)
+        self._fetch = generator.next

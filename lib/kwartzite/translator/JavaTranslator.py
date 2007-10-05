@@ -20,7 +20,7 @@ def q(string):
         if line.endswith("\r\n"):  line = line[0:-2] + "\\r\\n"
         elif line.endswith("\n"):  line = line[0:-1] + "\\n"
         L.append(line)
-    return '"\n            + "'.join(L)
+    return '"\n             + "'.join(L)
 
 
 

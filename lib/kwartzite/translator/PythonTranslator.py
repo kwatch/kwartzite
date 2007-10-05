@@ -51,8 +51,6 @@ class PythonTranslator(Translator):
 
 
     def translate(self, template_info, **properties):
-        def prop(name):
-            return properties.get(name) or getattr(self, name)
         stmt_list  = template_info.stmt_list
         elem_table = template_info.elem_table
         filename   = properties.get('filename') or template_info.filename
@@ -233,10 +231,11 @@ class PythonTranslator(Translator):
             else:
                 buf.append('((\n')
                 for space, aname, avalue in attr:
-                    if isinstance(avalue, Expression):
-                        s = "'''<"+q(avalue.code)+">'''"
-                    else:
-                        s = repr(avalue)
+                    #if isinstance(avalue, Expression):
+                    #    s = "'''<"+q(avalue.code)+">'''"
+                    #else:
+                    #    s = repr(avalue)
+                    s = "'" + q(avalue) + "'"
                     extend(("            ('", aname, "',", s, "),\n", ))
                 buf.append('        ))\n')
 

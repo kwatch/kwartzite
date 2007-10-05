@@ -10,6 +10,7 @@ import kwartzite
 import kwartzite.config as config
 from kwartzite.parser import Parser
 from kwartzite.parser.TextParser import TextParser
+from kwartzite.parser.XmlParser import XmlParser
 from kwartzite.translator import Translator
 from kwartzite.translator.PythonTranslator import PythonTranslator
 from kwartzite.translator.JavaTranslator import JavaTranslator
@@ -50,7 +51,7 @@ class Main(object):
             "  -n         :  no exec",
             "  -q         :  quiet mode",
             "  -a action  :  action (compile/parse/names) (default '%s')" % d['action'],
-            "  -p name    :  parser name (text) (default '%s')" % d['parser'],
+            "  -p name    :  parser name (text/xml) (default '%s')" % d['parser'],
             "  -t name    :  translator name (python/java) (default '%s')" % d['translator'],
             "  -o file    :  output filename",
             "  -d dir     :  output directory",
@@ -66,7 +67,7 @@ class Main(object):
             "  %b    filename without extension     (ex. 'foo-bar-baz')",
             "  %u    basename replaced [^\w] to '_' (ex. 'foo_bar_baz')",
             "  %d    dirname   (ex. '/path/to/template')",
-            "  %c    classname (ex. 'foo_bar_baz_html') (available only with '-o')",
+            "  %c    classname (ex. 'foo_bar_baz_html') (not available with '--classname')",
             "For example, '-o %u.py' results in 'foo_bar_baz.py'.",
             "Names are capitalized when upper case (ex. '%F' => 'FooBarBazHtml')",
             "",
@@ -208,7 +209,7 @@ class Main(object):
         parser_class_table = {
             'text': TextParser,
             #'html': HtmlParser,
-            #'xml':  XmlParser,
+            'xml':  XmlParser,
         }
         parser_class = parser_class_table.get(parser_name)
         if not parser_class:
@@ -279,13 +280,13 @@ class Main(object):
 
     def _to_value(self, val):
         if not isinstance(val, (str, unicode)): return val
-        elif val in ('true','True','yes'):  return True
-        elif val in ('false','False','no'): return False
-        elif val in ('null','None','nil'):  return None
-        elif re.match('^\d+$', val):        return int(val)
-        elif re.match('^\d+.\d+$', val):    return float(val)
-        elif re.match('^".*"$', val):       return val[1:-1]
-        elif re.match("^'.*'$", val):       return val[1:-1]
+        if val in ('true','True','yes'):  return True
+        if val in ('false','False','no'): return False
+        if val in ('null','None','nil'):  return None
+        if re.match('^\d+$', val):        return int(val)
+        if re.match('^\d+.\d+$', val):    return float(val)
+        if re.match('^".*"$', val):       return val[1:-1]
+        if re.match("^'.*'$", val):       return val[1:-1]
         return val
 
 

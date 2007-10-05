@@ -34,7 +34,7 @@ _escape_callable = lambda m: _escape_table[m.group(0)]
 _escape_pattern = re.compile(r'[<>&"]')
 
 def escape_xml(string):
-    _escape_pattern.sub(_escape_callale, s)
+    return _escape_pattern.sub(_escape_callable, string)
 
 h = escape_xml
 
