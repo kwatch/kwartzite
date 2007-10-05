@@ -236,8 +236,8 @@ class PythonTranslator(Translator):
                     #    s = "'''<"+q(avalue.code)+">'''"
                     #else:
                     #    s = repr(avalue)
-                    s = "'" + q(avalue) + "'"
-                    extend(("            ('", aname, "',", s, "),\n", ))
+                    #s = "'" + q(avalue) + "'"
+                    extend(("            ('", aname, "','", q(avalue), "',", repr(space), "),\n", ))
                 buf.append('        ))\n')
 
 

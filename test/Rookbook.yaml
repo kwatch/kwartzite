@@ -13,7 +13,10 @@ parameters:
 	  </head>
 	  <body>
 	    <h1>Section <span id="mark:secnum">99</span>: <span id="mark:sectitle" class="title">TITLE</span></h1>
-	    <p>Empty tag example.<br/><br></br>
+	    <p><span>Span tag</span> example.</p>
+	    <p><span id="mark:span1">Dummy span tag</span> example.</p>
+	    <p><span id="mark:span2" class="foo">Non-dummy span tag</span> example.</p>
+	    <p>Empty Tag example.<br/><br></br>
 	       <a  href="/cgi-bin/foo.cgi?a=1&amp;b=&amp;c="
 	          onclick="javascript:alert('OK?');return false"
 		  id="anchor1">attr spaces and extra spaces example</a>
@@ -43,6 +46,9 @@ recipes:
 	sys 'python test_main.py COMMAND > hoge.sh'
 	sys 'sh hoge.sh'
 	rm_f 'hoge.sh'
+
+  - product:	:input
+    ingreds:	[ $(datadir)/input.html ]
 
   - product:	$(datadir)/input.html
     ingreds:	[ Rookbook.yaml ]

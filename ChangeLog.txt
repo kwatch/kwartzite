@@ -2,6 +2,11 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+
+: rev.19 (2007-10-05)
+	.- [enhance] attribute.py: attribute class keeps spaces
+	.- [enhance] PythonTranslator.py: attribute space support
+
 : rev.18 (2007-10-05)
 	.- [enhance] test_main.py: add 'test/test_main.py'
 	.- [enhance] main.py: 'stdout' and 'stderr' arguments support for Main()

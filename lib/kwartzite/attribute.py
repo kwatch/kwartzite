@@ -5,7 +5,7 @@
 ###
 
 
-from kwartzite.util import NULL
+from kwartzite.util import escape_xml, to_str, NULL
 
 
 
@@ -14,53 +14,79 @@ class Attribute(object):
 
     def __init__(self, arg=None):
         if isinstance(arg, dict):
-            D = arg
-            L = D.keys().sort()
+            self._values = arg
+            self._names  = arg.keys().sort()
+            self._spaces = _spaces = {}
+            if self._names:
+                for name in self._names:
+                    _spaces[name] = ' '
         elif isinstance(arg, (tuple, list)):
-            D = {}
-            L = []
+            self._values = _values = {}
+            self._names  = _names  = []
+            self._spaces = _spaces = {}
             for T in arg:
-                name, value = T
-                D[name] = value
-                L.append(name)
-                #if not D.has_key(name): L.append(name)
+                if len(T) == 3:
+                    name, value, space = T
+                else:
+                    name, value = T; space = ' '
+                #if not _values.has_key(name): _names.append(name)
+                _names.append(name)
+                _values[name] = value
+                _spaces[name] = space
         else:
-            D = {}
-            L = []
-        self._values = D
-        self._names = L
+            self._values = {}
+            self._names  = []
+            self._spaces = {}
         self._modified = False
-        self.__getitem__ = D.__getitem__   # for performance
+        self.__getitem__ = self._values.__getitem__   # for performance
 
 
     def __setitem__(self, name, value):
         if not self._values.has_key(name):
             self._names.append(name)
+            self._spaces[name] = ' '
         self._values[name] = value
         self._modified = True
         return value
 
 
+    def set(self, name, value, escape=True, space=None):
+        if not self._values.has_key(name):
+            self._names.append(name)
+            self._spaces[name] = space or ' '
+        else:
+            if space is not None:
+                self._spaces[name] = space
+        if escape:
+            self._values[name] = escape_xml(value)
+        else:
+            self._values[name] = value
+        self._modified = True
+        return value
+
+
     def __getitem__(self, name):
-        return self._dict[name]
+        return self._values[name]
 
 
     def __delitem__(self, name):
         if self._values.has_key(name):
-            del self._dict[name]
+            del self._values[name]
+            del self._spaces[name]
             self._names.remove(value)
             self._modified = true
 
 
     def append_to(self, buf, nullobj=None):
         _values = self._values
+        _spaces = self._spaces
         for name in self._names:
             val = _values[name]
             if val is not nullobj:
-                buf.extend((' ', name, '="', val, '"'))
+                buf.extend((_spaces[name], name, '="', val, '"'))
 
 
-    def to_string(self):
+    def __str__(self):
         buf = []
         self.append_to(buf)
         return ''.join(buf)
@@ -76,7 +102,8 @@ class Attribute(object):
 
     def __iter__(self):
         _values = self._values
-        return [ (name, _values[name]) for name in self._names ].__iter__()
+        _spaces = self._spaces
+        return [ (k, _values[k], _spaces[k]) for k in self._names ].__iter__()
 
 
     def __repr__(self):
