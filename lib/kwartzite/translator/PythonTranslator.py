@@ -35,12 +35,13 @@ class PythonTranslator(Translator):
         ('nullobj'   , 'bool', 'use NULL object instead of None'),
         ('fragment'  , 'bool', 'define element_xxx() and content_xxx()'),
         ('attrobj'   , 'bool', 'use kwartzite.attribute.Attribute instead of dict'),
+        ('accessors' , 'bool', 'define set_{text|attr|node}_xxx() or not'),
     )
     define_properties(_property_descriptions, baseclass='object', attrobj=True)
     if locals()['baseclass'] is 'Object':  locals()['baseclass'] = 'object'
 
 
-    def __init__(self, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, attrobj=None, **properties):
+    def __init__(self, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, attrobj=None, accessors=None, **properties):
         Translator.__init__(self, **properties)
         if classname   is not None:  self.classname = classname
         if baseclass   is not None:  self.baseclass = baseclass
@@ -50,6 +51,7 @@ class PythonTranslator(Translator):
         if nullobj     is not None:  self.nullobj   = nullobj
         if fragment    is not None:  self.fragment  = fragment
         if attrobj     is not None:  self.attrobj   = attrobj
+        if accessors   is not None:  self.accessors = accessors
         self.nullvalue = nullobj and 'NULL' or 'None'
 
 
@@ -68,11 +70,13 @@ class PythonTranslator(Translator):
         attrobj    = self.attrobj
         buf = []
         extend = buf.extend
+        #
         if encoding:
             extend(('# -*- coding: ', encoding, " -*-\n", ))
         if filename:
             extend(('## generated from ', filename, '\n', ))
         buf.append('\n')
+        #
         if self.attrobj:
             extend(('from kwartzite.attribute import Attribute\n', ))
         if encoding:
@@ -86,7 +90,9 @@ class PythonTranslator(Translator):
         extend((    'h = escape_xml\n'
                     "__all__ = ['", classname, "', 'escape_xml', 'to_str', 'h'", s, "]\n"
                     '\n'
-                    '\n'
+                    ,))
+        #
+        extend((    '\n'
                     'class ', classname, '(', baseclass, '):\n'
                     '\n'
                     ,))
@@ -104,6 +110,7 @@ class PythonTranslator(Translator):
         for name, elem in elem_table.iteritems():
             extend(('        self.init_', name, '()\n', ))
         buf.append('\n')
+        #
         if not self.attrobj:
             extend(('    def _append_attr(self, attr, nullvalue=None):\n'
                     '        extend = self._buf.extend\n'
@@ -112,6 +119,7 @@ class PythonTranslator(Translator):
                     '                extend((\' \', k, \'="\', v, \'"\'))\n'
                     '\n'
                     ,))
+        #
         extend((    '    def create_document(self):\n'
                     '        _buf = self._buf\n'
                     ,))
@@ -119,6 +127,7 @@ class PythonTranslator(Translator):
         extend((    "        return ''.join(_buf)\n"
                     "\n"
                     ,))
+        #
         for name, elem in elem_table.iteritems():
             extend(("\n"
                     "    ## element '", name, "'\n"
@@ -146,12 +155,15 @@ class PythonTranslator(Translator):
                     "    _init_", name, " = init_", name, "\n"
                     ,))
             buf.append("\n")
+            if self.accessors:
+                self.expand_accessors(buf, elem)
         #extend((
         #    "\n"
         #    "class ", classname, "(", classname, "_):\n"
         #    "    pass\n"
         #    "\n",
         #    ))
+        #
         if mainprog:
             extend(("\n"
                     "# for test\n"
@@ -348,6 +360,14 @@ class PythonTranslator(Translator):
             ,))
 
 
+    def expand_element(self, buf, elem):
+        self._expand_element_or_content(buf, elem, 'element')
+
+
+    def expand_content(self, buf, elem):
+        self._expand_element_or_content(buf, elem, 'content')
+
+
     def _expand_element_or_content(self, buf, elem, kind):
         s1, s2 = kind == 'element' and ('element', 'elem') or ('content', 'cont')
         name = elem.name
@@ -368,9 +388,28 @@ class PythonTranslator(Translator):
             ,))
 
 
-    def expand_element(self, buf, elem):
-        self._expand_element_or_content(buf, elem, 'element')
-
-
-    def expand_content(self, buf, elem):
-        self._expand_element_or_content(buf, elem, 'content')
+    def expand_accessors(self, buf, elem):
+        extend = buf.extend
+        name = elem.name
+        d_name = elem.directive.name
+        if d_name in ('mark', 'text', 'textattr', ):
+            extend((
+            "    def set_text_", name, "(self, value):\n"
+            "        self.text_", name, " = escape_xml(to_str(value))\n"
+            "\n", ))
+        if d_name in ('mark', ):
+            extend((
+            "    def set_node_", name, "(self, value):\n"
+            "        self.node_", name, " = escape_xml(to_str(value))\n"
+            "\n", ))
+        if d_name in ('mark', 'attr', 'textattr', ):
+            extend((
+            "    def set_attr_", name, "(self, name, value):\n"
+            "        if value is ", self.nullvalue, ":\n"
+            "            self.attr_", name, "[name] = ", self.nullvalue, "\n"
+            "        else:\n"
+            "            self.attr_", name, "[name] = escape_xml(to_s(value))\n"
+            "\n"
+            "    def del_attr_", name, "(self, name):\n"
+            "        self.attr_", name, ".pop(name, None)\n"
+            "\n", ))

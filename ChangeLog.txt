@@ -2,6 +2,8 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.21 (2007-10-06)
+	.- [enhance] PythonTranslator.py: --accessors support
 
 : rev.20 (2007-10-05)
 	.- [enhance] PythonTranslator.py: --attrobj support

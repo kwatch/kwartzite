@@ -20,3 +20,4 @@ CONTEXT   = True
 NULLOBJ   = False
 FRAGMENT  = False
 ATTROBJ   = None
+ACCESSORS = True
