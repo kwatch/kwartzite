@@ -12,6 +12,22 @@ import sys, os, re
 NULL = object()
 
 
+def _super(obj):
+    """
+    utility function which is more convenient than super().
+    ex.
+      class Parent(object):
+          def message(self):
+              print '* Parent class'
+      class Child(Parent):
+          def message(self):
+              _super(self).message()   # equivarent to super(Child, self).message()
+              print '* Chld class'
+      Child().message()
+    """
+    return super(obj.__class__, obj)
+
+
 
 def to_str(val):
     if val is None: return ''

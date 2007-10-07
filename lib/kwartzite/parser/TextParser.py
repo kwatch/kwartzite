@@ -223,6 +223,10 @@ class Directive(object):
         self.linenum    = linenum
 
 
+    def attr_string(self):
+        return '%s="%s"' % (self.attr_name, self.attr_value)
+
+
 
 class BaseParser(Parser):
 

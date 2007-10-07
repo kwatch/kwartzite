@@ -62,6 +62,9 @@ class TemplateInfo(object):
 class Parser(object):
 
 
+    filename = None
+
+
     def __init__(self, **properties):
         self.properties = properties
 

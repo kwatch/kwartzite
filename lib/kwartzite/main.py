@@ -8,13 +8,39 @@
 import sys, os, re
 import kwartzite
 import kwartzite.config as config
-from kwartzite.parser import Parser
+
+#from kwartzite.parser import Parser
 from kwartzite.parser.TextParser import TextParser
 from kwartzite.parser.XmlParser import XmlParser
-from kwartzite.translator import Translator
+#from kwartzite.translator import Translator
 from kwartzite.translator.PythonTranslator import PythonTranslator
 from kwartzite.translator.JavaTranslator import JavaTranslator
+try:
+    from kwartzite.parser.ElementTreeParser import ElementTreeParser
+    from kwartzite.translator.ElementTreeTranslator import ElementTreeTranslator
+except ImportError:
+    ElementTreeParser = None
+    ElementTreeTranslator = None
 from kwartzite.util import build_values_from_filename, parse_name_pattern
+
+
+
+parser_class_table = {
+    'text': TextParser,
+    #'html': HtmlParser,
+    'xml':  XmlParser,
+    'etree': ElementTreeParser,
+}
+
+
+translator_class_table = {
+    'python': PythonTranslator,
+    'java':   JavaTranslator,
+    #'ruby':  RubyTranslator,
+    #'php':   PhpTranslator,
+    #'js':    JavascriptTranslator,
+    'etree': ElementTreeTranslator,
+}
 
 
 
@@ -54,7 +80,13 @@ class Main(object):
             "  -q         :  quiet mode",
             "  -a action  :  action (compile/parse/names) (default '%s')" % d['action'],
             "  -p name    :  parser name (text/xml) (default '%s')" % d['parser'],
+            "    -p text  :    parse file as text even if *.html or *.xml",
+            "    -p xml   :    parse file using Expat XML parser (ascii or utf8 only)",
+            "    -p etree :    parse file using ElementTree (for '-t etree' only)",
             "  -t name    :  translator name (python/java) (default '%s')" % d['translator'],
+            "    -t python:    generate python class",
+            "    -t java  :    generate java class",
+            "    -t etree :    generate ElementTree document",
             "  -o file    :  output filename",
             "  -d dir     :  output directory",
             "",
@@ -120,6 +152,15 @@ class Main(object):
         if action not in ('compile', 'parse', 'names'):
             msg = "-a %s: unknown action (expected 'compile', 'parse', or 'names')."
             raise self._error(msg % action)
+
+        ## check '-t etree'
+        if options.get('t') == 'etree':
+            if not options.has_key('p'):
+                options['p'] = 'etree'
+            elif options.get('p') != 'etree':
+                raise self._error("-p %s: is not available with '-t etree'." % options.get('p'))
+        elif options.get('p') == 'etree':
+            raise self._error("-p %s: is only available with '-t etree'." % options.get('p'))
 
         ## parser
         parser_name = options.get('p') or self.defaults['parser']
@@ -212,11 +253,6 @@ class Main(object):
 
 
     def _find_parser_class(self, parser_name):
-        parser_class_table = {
-            'text': TextParser,
-            #'html': HtmlParser,
-            'xml':  XmlParser,
-        }
         parser_class = parser_class_table.get(parser_name)
         if not parser_class:
             parser_class = globals().get(parser_name)
@@ -226,13 +262,6 @@ class Main(object):
 
 
     def _find_translator_class(self, translator_name):
-        translator_class_table = {
-            'python': PythonTranslator,
-            'java':   JavaTranslator,
-            #'ruby':  RubyTranslator,
-            #'php':   PhpTranslator,
-            #'js':    JavascriptTranslator,
-        }
         translator_class = translator_class_table.get(translator_name)
         if not translator_class:
             translator_class = globals().get(translator_name)

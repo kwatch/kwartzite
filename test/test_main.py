@@ -15,17 +15,25 @@ from testcase_helper import *
 from kwartzite.main import Main
 
 
+def readfile(filename):
+    path = DATA_DIR + '/' + filename
+    if os.path.isfile(path):
+        return open(path).read()
+    return ''
+
 CURR_DIR   = os.getcwd()
 SANDBOX    = '_sandbox'
 DATA_DIR   = CURR_DIR + '/testdata/test_main'
 INPUT_HTML = open(DATA_DIR + '/input.html').read()
-EXPECTED_TEXT_PYTHON = open(DATA_DIR + '/test_text_python.expected').read()
-EXPECTED_TEXT_JAVA   = open(DATA_DIR + '/test_text_java.expected').read()
-EXPECTED_XML_PYTHON  = open(DATA_DIR + '/test_xml_python.expected').read()
-EXPECTED_XML_JAVA    = open(DATA_DIR + '/test_xml_java.expected').read()
+EXPECTED_TEXT_PYTHON = readfile('test_text_python.expected')
+EXPECTED_TEXT_JAVA   = readfile('test_text_java.expected')
+EXPECTED_XML_PYTHON  = readfile('test_xml_python.expected')
+EXPECTED_XML_JAVA    = readfile('test_xml_java.expected')
+EXPECTED_ETREE_ETREE = readfile('test_etree_etree.expected')
 
 PYTHON_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes --attrobj=False'
 JAVA_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --interface=kwartzite.Template --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes'
+ETREE_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --encoding=UTF8 --mainprog=false'
 
 
 
@@ -207,6 +215,17 @@ class MainTest(unittest.TestCase, TestCaseHelper):
 
     shell_command_to_generate_test_xml_java_expected = \
         _shell_command('test-xml-java.html', 'test_xml_java.expected', '-pxml -tjava')
+
+
+    def test_rexml_rexml(self):
+        #self.debug     = True
+        self.input     = INPUT_HTML
+        self.expected  = EXPECTED_ETREE_ETREE  # or True
+        self.options   = "-t etree"
+        self._test()
+
+    shell_command_to_generate_test_etree_etree_expected = \
+        _shell_command('test-etree-etree.html', 'test_etree_etree.expected', '-tetree')
 
 
     def test_out_file_1(self):
