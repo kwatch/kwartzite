@@ -83,7 +83,7 @@ class Attribute(object):
         for name in self._names:
             val = _values[name]
             if val is not nullobj:
-                buf.extend((_spaces[name], name, '="', val, '"'))
+                buf.extend((_spaces.get(name) or ' ', name, '="', val, '"'))
 
 
     def __str__(self):
@@ -182,6 +182,7 @@ class Attribute(object):
         attr._names = self._names[:]
         attr._modified = self._modified
         attr.__getitem__ = attr._values.__getitem__
+        return attr
 
 
 

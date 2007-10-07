@@ -98,14 +98,16 @@ class PythonTranslator(Translator):
                     ,))
         if context:
             extend(('    def __init__(self, **_context):\n'
-                    '        #for k, v in _context.iteritems():\n'
-                    '        #    setattr(self, k, v)\n'
+                    '        for k, v in _context.iteritems():\n'
+                    '            setattr(self, k, v)\n'
                     '        self._context = _context\n'
-                    '        self._buf = []\n'
                     ,))
         else:
             extend(('    def __init__(self):\n'
-                    '        self._buf = []\n'
+                    ,))
+        extend((    '        self._buf = []\n'
+                    '        self._append = self._buf.append\n'
+                    '        self._extend = self._buf.extend\n'
                     ,))
         for name, elem in elem_table.iteritems():
             extend(('        self.init_', name, '()\n', ))
@@ -113,18 +115,19 @@ class PythonTranslator(Translator):
         #
         if not self.attrobj:
             extend(('    def _append_attr(self, attr, nullvalue=None):\n'
-                    '        extend = self._buf.extend\n'
+                    '        _extend = self.extend\n'
                     '        for k, v in attr.iteritems():\n'
                     '            if v is not nullvalue:\n'
-                    '                extend((\' \', k, \'="\', v, \'"\'))\n'
+                    '                _extend((\' \', k, \'="\', v, \'"\'))\n'
                     '\n'
                     ,))
         #
         extend((    '    def create_document(self):\n'
-                    '        _buf = self._buf\n'
+                    '        _append = self._append\n'
+                    '        _extend = self._extend\n'
                     ,))
         self.expand_items(buf, stmt_list)
-        extend((    "        return ''.join(_buf)\n"
+        extend((    "        return ''.join(self._buf)\n"
                     "\n"
                     ,))
         #
@@ -179,11 +182,11 @@ class PythonTranslator(Translator):
             if not L:
                 return
             elif len(L) == 1:
-                buf.extend(("        _buf.append(", L[0][:-2], ")\n", ))
+                buf.extend(("        _append(", L[0][:-2], ")\n", ))
             else:
                 if L[-1].endswith('\n'):
                     L[-1] = L[-1][:-1] + ' '
-                buf.append("        _buf.extend((")
+                buf.append("        _extend((")
                 buf.extend(L)
                 buf.append("))\n")
             L[:] = ()
@@ -228,7 +231,7 @@ class PythonTranslator(Translator):
             extend((
             "        self._append_attr(self.attr_", name, s, ")\n"
             #"        for k, v in self.attr_", name, ".iteritems():\n"
-            #"            if v is not ", self.nullvalue, ": _buf.extend((' ', k, '=\"', v, '\"'))\n"
+            #"            if v is not ", self.nullvalue, ": self._extend((' ', k, '=\"', v, '\"'))\n"
             ,))
 
 
@@ -286,7 +289,7 @@ class PythonTranslator(Translator):
             '            self.cont_', name, '()\n'
             '            self.etag_', name, '()\n'
             '        else:\n'
-            '            self._buf.append(to_str(self.node_', name, '))\n'
+            '            self._append(to_str(self.node_', name, '))\n'
             ,))
 
 
@@ -300,17 +303,17 @@ class PythonTranslator(Translator):
         if stag.name:
             s = self.nullobj and (", "+self.nullvalue) or ""
             extend((
-            "        _buf = self._buf\n"
-            "        _buf.append('''", stag.head_space or "", "<", stag.name, "''')\n"
+            "        _append = self._append\n"
+            "        _append('''", stag.head_space or "", "<", stag.name, "''')\n"
             ,))
             self.expand_attr(buf, name)
             extend((
-            "        _buf.append('''", stag.extra_space or "", stag.is_empty and "/>" or ">", q(stag.tail_space or ""), "''')\n"
+            "        _append('''", stag.extra_space or "", stag.is_empty and "/>" or ">", q(stag.tail_space or ""), "''')\n"
             ,))
         else:
             s = (stag.head_space or '') + (stag.tail_space or '')
             if s:
-                extend(("        self._buf.append('", s, "')\n", ))
+                extend(("        self._append('", s, "')\n", ))
             else:
                 extend(("        pass\n", ))
 
@@ -320,11 +323,12 @@ class PythonTranslator(Translator):
         extend = buf.extend
         extend((    '    def cont_', name, '(self):\n', ))
         if elem.cont_text_p():
-            extend(('        self._buf.append(to_str(self.text_', name, '))\n', ))
+            extend(('        self._append(to_str(self.text_', name, '))\n', ))
         else:
-            extend(('        _buf = self._buf\n', ))
+            extend(('        _append = self._append\n', ))
+            extend(('        _extend = self._extend\n', ))
             extend(('        if self.text_', name, ' is not ', self.nullvalue, ':\n'
-                    '            _buf.append(self.text_', name, ')\n', ))
+                    '            _append(self.text_', name, ')\n', ))
             if not elem.cont:
                 return
             extend(('            return\n', ))
@@ -344,15 +348,14 @@ class PythonTranslator(Translator):
             ,))
         elif etag.name:
             extend((
-            "        _buf = self._buf\n"
-            "        _buf.append('''", etag.head_space or "", "</", etag.name,
+            "        self._append('''", etag.head_space or "", "</", etag.name,
                                  ">", q(etag.tail_space or ""), "''')\n"
             ,))
         else:
             s = (etag.head_space or '') + (etag.tail_space or '')
             if s:
                 extend((
-            "        self._buf.append('", q(s), "')\n"
+            "        self._append('", q(s), "')\n"
             ,))
             else:
                 extend((

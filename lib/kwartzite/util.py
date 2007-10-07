@@ -12,7 +12,7 @@ import sys, os, re
 NULL = object()
 
 
-def _super(obj):
+def _super(self):
     """
     utility function which is more convenient than super().
     ex.
@@ -25,7 +25,7 @@ def _super(obj):
               print '* Chld class'
       Child().message()
     """
-    return super(obj.__class__, obj)
+    return super(self.__class__, self)
 
 
 

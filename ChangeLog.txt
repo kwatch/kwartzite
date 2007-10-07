@@ -2,6 +2,12 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.23 (2007-10-07)
+	.- [change] PythonTranslator.py: set _context into self in __ini__()
+	.- [change] PythonTranslator.py: set self._buf.append and self._buf.extend to self._append and self._extend
+	.- [bugfix] attribute.py: Attribute#append_to(): attribute may have no spaces.
+	.- [bugfix] attribute.py: Attribute#copy(): return new instance
+
 : rev.22 (2007-10-07)
 	.- [enhance] ElementTreeParser.py: added
 	.- [enhance] ElementTreeTranslator.py: added
