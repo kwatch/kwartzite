@@ -114,23 +114,11 @@ class PythonTranslator(Translator):
                 extend((
                     '        self.attr_', name, ' = self.attr_', name, '.copy()\n'
                     ,))
-        buf.append('\n')
+        buf.append( '\n'
+                    '    _init__ = __init__\n'
+                    '\n')
         #
-        extend((    '    def _set_buf(self, _buf):\n'
-                    '        self._buf = _buf\n'
-                    '        self._append = _buf.append\n'
-                    '        self._extend = _buf.extend\n'
-                    '\n'
-                    ,))
-        #
-        if not self.attrobj:
-            extend(('    def _append_attr(self, attr, nullvalue=None):\n'
-                    '        _extend = self.extend\n'
-                    '        for k, v in attr.iteritems():\n'
-                    '            if v is not nullvalue:\n'
-                    '                _extend((\' \', k, \'="\', v, \'"\'))\n'
-                    '\n'
-                    ,))
+        self.expand_utils(buf, elem)
         #
         extend((    '    def create_document(self):\n'
                     '        _append = self._append\n'
@@ -138,6 +126,8 @@ class PythonTranslator(Translator):
                     ,))
         self.expand_stmt_list(buf, stmt_list)
         extend((    "        return ''.join(self._buf)\n"
+                    "\n"
+                    "    _create_document = create_document\n"
                     "\n"
                     ,))
         #
@@ -436,3 +426,27 @@ class PythonTranslator(Translator):
             "    def del_attr_", name, "(self, name):\n"
             "        self.attr_", name, ".pop(name, None)\n"
             "\n", ))
+
+
+    def expand_utils(self, buf, elem):
+        extend = buf.extend
+        extend((    '    def _set_buf(self, _buf):\n'
+                    '        self._buf = _buf\n'
+                    '        self._append = _buf.append\n'
+                    '        self._extend = _buf.extend\n'
+                    '\n'
+                    ,))
+        #
+        extend((    '    def echo(self, value):\n'
+                    '        self._append(to_str(value))\n'
+                    '\n'
+                    ,))
+        #
+        if not self.attrobj:
+            extend(('    def _append_attr(self, attr, nullvalue=None):\n'
+                    '        _extend = self.extend\n'
+                    '        for k, v in attr.iteritems():\n'
+                    '            if v is not nullvalue:\n'
+                    '                _extend((\' \', k, \'="\', v, \'"\'))\n'
+                    '\n'
+                    ,))

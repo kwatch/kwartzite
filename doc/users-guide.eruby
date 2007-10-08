@@ -67,11 +67,11 @@ class my_example1(my_example1_html):
 
     def elem_item1(self):
         odd = False
-        {{*for item in ['foo', 'bar', 'baz']:*}} # repeat elements
+        {{*for item in ['foo', 'bar', 'baz']:*}}     # repeat elements
 	    odd = not False
 	    val = odd and 'odd' or 'even'
-            {{*self.set_attr_item1('class', val)*}}      # set attribute
-            {{*self.set_text_item1(item)*}}      # set content data
+            {{*self.set_attr_item1('class', val)*}}  # set attribute
+            {{*self.set_text_item1(item)*}}          # set content data
             self.stag_item1()
             self.cont_item1()
             self.etag_item1()
@@ -90,21 +90,340 @@ from my_example1_html import my_example1_html
 class my_example1(my_example1_html):
 
     def elem_item1(self):
-        for item in {{*self.items*}}:         # get context data
-	    self.set_text_item1(item)   # set content
+        odd = False
+        for item in {{*self.items*}}:              # get context data
+	    odd = not False
+	    val = odd and 'odd' or 'even'
+            self.set_attr_item1('class', val)
+	    self.set_text_item1(item)
 	    self.stag_item1()
 	    self.cont_item1()
 	    self.etag_item1()
 
 if __name__ == '__main__':
-    items = ['AAA', 'BBB', 'CCC']
-    page = my_example1({{*items=items*}})    # set context data
+    page = my_example1({{*items=['A','B','C']*}})  # set context data
     print page.create_document()
 .--------------------
 
 
+.$ Prensetation Logic Pattern Catalog
 
-.$ Examples
+
+.$$ Replace Element/Content with Value
+
+.? value1.html
+.-------------------- value1.html
+<html id="mark:html">
+  <body>
+    <h1 id="mark:title">TITLE</h1>
+    <p>Hello <span id="mark:name">World</span>!</p>
+  </body>
+</html>
+.--------------------
+
+.? value1.py
+.-------------------- value.py
+from value1_html import value1_html
+from kwartzite.util import escape_xml
+
+class value1(value1_html):
+
+    ## replace content with value
+    def cont_title(self):
+        self.echo(escape_xml(self.title))
+
+    ## replace element with value
+    def elem_name(self):
+        self.echo(escape_xml(self.name))
+
+    ## or
+    #def elem_html(self):
+    #    self.set_text_title(self.title)  # replace content
+    #    self.set_node_name(self.name)    # replace element
+    #    self.stag_html()
+    #    self.cont_html()
+    #    self.etag_html()
+
+if __name__ == '__main__':
+    page = value1(title='Hello page', name='Kwartzite')
+    print page.create_document()
+.--------------------
+
+
+.$$ Replace Element/Content with Other Element/Content
+
+.? layout1.html
+.-------------------- layout1.html
+<html id="mark:html">
+  <body>
+
+    <h1 id="title">TITLE</h1>
+
+    <div id="mark:tabs">
+      <a href="/">Top</a> |
+      <a href="/products/">Products</a> |
+      <a href="/support/">Support</a>
+    </div>
+
+    <div id="main">
+      ...
+      ...
+      ...
+    </div>
+
+    <div id="mark:tabs2>
+      Top | Products | Support
+    <div>
+
+  </body>
+</html>
+.--------------------
+
+.? layout1.py
+.-------------------- layout1.py
+from layout1_html import layout1_html
+
+class layout1(layout1_html):
+
+     ## replace 'tabs2' element with 'tabs' element
+     def elem_tabs2(self):
+         self.elem_tabs()
+
+     ## replace content of 'main' with other page's content
+     def cont_main(self):
+	 self.echo(self.page.create_content_main())
+
+     ## replace 'title' with other page's title
+     def cont_title(self):
+	 self.echo(self.page.text_title)
+
+     ## or
+     #def elem_html(self):
+     #    self.text_title = self.page.text_title
+     #    self.text_main  = self.page.create_content_main()
+     #    self.stag_html()
+     #    self.cont_html()
+     #    self.etag_html()
+
+if __name__ == '__main__':
+     from main1 import main1
+     page = main1(list=['A','B','C'])
+     layout = layout1(page=page)
+     print layout.create_document(),
+.--------------------
+
+.? main1.html
+.-------------------- main1.html
+<html>
+  <body>
+    <h1 id="title">Main page</h1>
+    <div id="main">
+      <ul>
+        <li id="mark:item">foo</li>
+      </ul>
+    </div>
+  </body>
+</html>
+.--------------------
+
+.? main1.py
+.-------------------- main1.py
+from main1_html import main1_html
+class main1(main1_html):
+    def elem_item(self):
+        for item in self.list:
+	    self.set_text_item(item)
+	    self.stag_item()
+	    self.cont_item()
+	    self.etag_item()
+
+if __name__ == '__main__':
+    print main1(list=['A','B','C']).create_document(),
+.--------------------
+
+
+.$$ Iterate Element
+
+.? table1.html
+.-------------------- table1.html
+<table>
+  <tr id="mark:list">
+    <td id="mark:num">123</td>
+    <td id="mark:item">foo</td>
+  </tr>
+</ul>
+.--------------------
+
+.? table1.py
+.-------------------- table1.py
+from table1_html import table1_html 
+
+class table1_page(table1_html):
+
+    def elem_list(self):
+        ## iterate element
+        i = 0
+        for item in self.list:
+	    i += 1
+	    self.set_text_num(i)
+	    self.set_text_item(item)
+	    self.stag_list()
+	    self.cont_list()
+	    self.etag_list()
+
+if __name__ == '__main__':
+    page = table1_page(list=['A','B','C'])
+    print page.create_document()
+.--------------------
+
+
+.$$ Iterate Content
+
+.? bibliography1.html
+.-------------------- bibliography1.html
+<dl id="mark:bib">
+  <dt id="mark:term">term</dt>
+  <dd id="mark:desc">description</dd>
+</dl>
+.--------------------
+
+.? bibliography1.py
+.-------------------- bibliography1.py
+from bibliography1_html import bibliography1_html
+class bibliography1_page(bibliography1_html):
+    def elem_bib(self):
+       self.stag_bib()
+       for term, desc in self.biblist:
+           self.set_text_term(term)
+           self.set_text_desc(desc)
+           self.cont_bib()
+       self.etag_bib()
+
+if __name__ == '__main__':
+    L = [
+       ('termA', 'descriptionA'),
+       ('termB', 'descriptionB'),
+       ('termC', 'descriptionC'),
+    ]
+    page = bibliography1_page(biblist=L)
+    print page.create_document(),
+.--------------------
+
+
+.$$ Remove Tags
+
+.? navi1.html
+.-------------------- navi1.html
+<p>
+  <span><a href="#" id="mark:prev_link">Prev</a></span>
+  |
+  <span><a href="#" id="mark:next_link">Next</a></span>
+</p>
+.--------------------
+
+.? navi1.py
+.-------------------- navi1.py
+from navi1_html import navi1_html
+class navi1(navi1_html):
+
+    ## remove start tag and end tag if url is not specified
+    def elem_prev_link(self):
+        if self.prev_url:
+	    self.set_attr_prev_url("href", self.prev_url)
+	    self.stag_prev_link()
+	    self.cont_prev_link()
+	    self.etag_prev_link()
+	else:
+	    self.cont_prev_link()
+
+    ## remove start tag and end tag if url is not specified
+    def elem_next_link(self):
+        if self.next_url:
+	    self.set_attr_next_url("href", self.next_url)
+	    self.stag_next_link()
+	    self.cont_next_link()
+	    self.etag_next_link()
+	else:
+	    self.cont_next_link()
+
+if __name__ == '__main__':
+    page = navi1(prev_url="foo.html", next_url=None)
+    print page.create_document(),
+.--------------------
+
+
+.$$ Remove Element
+
+.? dummy1.html
+.-------------------- dummy1.html
+<ul>
+  <li id="mark:item">foo</li>
+  <li id="mark:dummy1">bar</li>
+  <li id="mark:dummy2">baz</li>
+</ul>
+.--------------------
+
+.? dummy1.py
+.-------------------- dummy1.py
+from dummy1_html import dummy1_html
+class dummy1_page(dummy1_html):
+    def elem_item(self):
+       for item in self.list:
+          self.stag_item()
+          self.cont_item()
+          self.etag_item()
+
+    def elem_dummy1(self):
+        pass
+
+    def elem_dummy2(self):
+        pass
+.--------------------
+
+
+.$$ Choice Element
+
+.? message.html
+.-------------------- message.html
+<div id="mark:message">
+  <p id="mark:error" style="color:red">
+    ERROR: <span id="mark:error_msg">error message.</span>
+  </p>
+  <p id="mark:warning" style="color:blue">
+    WARNING: <span id="mark:warning_msg">warning message.</span>
+  </p>
+  <p id="mark:info">
+    <span id="mark:info_msg">information message.</span>
+  </p>
+</div>
+.--------------------
+
+.? message_page.py
+.-------------------- message_page.py
+from message_html import message_html
+
+class message_page(message_html):
+
+    def elem_message(self):
+        ## choice element according to condition
+        if self.error:
+	    self.set_text_error_msg(self.error)
+	    self.elem_error()     # choice id="error"
+	elif self.warning:
+	    self.set_text_warning_msg(self.warning)
+	    self.elem_warning()   # choice id="warning"
+	elif self.info:
+	    self.set_text_info_msg(self.info)
+	    self.elem_info()      # choice id="info"
+
+if __name__ == '__main__':
+    warning = 'You should read Kwartizte User's Guide.'
+    print message_page(warning=warning).create_document(),
+.--------------------
+
+
+
+.$ Practical Examples
 
 
 .$$ Bordered Table #1
@@ -187,46 +506,6 @@ class bordered_table2(bordered_table2_html):
 if __name__ == '__main__':
     L = ['<AAA>', 'B&B', '"CCC"']
     print bordered_table2(list=L),
-.--------------------
-
-
-.$$ Conditonal Branch
-
-.? message.html
-.-------------------- message.html
-<div id="mark:message">
-  <p id="mark:error" style="color:red">
-    ERROR: <span id="mark:error_msg">error message.</span>
-  </p>
-  <p id="mark:warning" style="color:blue">
-    WARNING: <span id="mark:warning_msg">warning message.</span>
-  </p>
-  <p id="mark:info">
-    <span id="mark:info_msg">information message.</span>
-  </p>
-</div>
-.--------------------
-
-.? message_page.py
-.-------------------- message_page.py
-from message_html import message_html
-
-class message_page(message_html):
-
-    def elem_message(self):
-        if self.error:
-	    self.set_text_error_msg(self.error)
-	    self.elem_error()
-	elif self.warning:
-	    self.set_text_warning_msg(self.warning)
-	    self.elem_warning()
-	elif self.info:
-	    self.set_text_info_msg(self.info)
-	    self.elem_info()
-
-if __name__ == '__main__':
-    warning = 'You should read Kwartizte User's Guide.'
-    print message_page(warning=warning).create_document(),
 .--------------------
 
 
@@ -470,3 +749,47 @@ class PageLayout extends PageLayoutHtml {
 }
 .--------------------
 
+
+
+.$$ Breadcrumbs
+
+
+.? breadcrumbs.html
+.-------------------- breadcrumbs.html
+<div id="breadcrumbs">
+  <a href="/" id="mark:crumb">Top</a>
+  <span id="mark:separator">&gt;</span>
+  <a href="/foo">Foo</a> &gt;
+  <a href="/bar">Bar</a> &gt;
+  <strong id="mark:current">Baz</strong>
+</div>
+.--------------------
+
+.? breadcrumbs.py
+.-------------------- breadcrumbs.py
+from breadcrumbs_html import breadcrumbs_html
+
+class breadcrumbs(breadcrumbs_html):
+
+    def elem_breadcrumbs(self):
+        self.stag_breadcrumbs()
+        for name, url in self.list:
+	    if url:
+	        self.set_attr_crumb("href", url)
+		self.set_text_crumb(name)
+		self.elem_crumb()
+		self.elem_separator()
+            else:
+	        self.set_text_current(name)
+	        self.elem_current()
+        self.etag_breadcrumbs()
+
+if __name__ == '__main__':
+    L = [
+        ('Top',       '/'),         
+        ('Products',  '/products/'),
+        ('Kwartzite', '/products/kwartzite/'),
+        ('Examples',  None),
+    ]
+    print breadcrumbs(list=L).create_document(),
+.--------------------

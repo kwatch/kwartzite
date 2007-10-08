@@ -2,6 +2,10 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.25 (2007-10-08)
+	.- [enhance] PythonTranslator.py, JavaTranslator.py: add 'echo()'
+	.- [update] users-guide.py
+
 : rev.24 (2007-10-08)
 	.- [enhance] users-guide.eruby: added
 	.- [change] PythonTranslator.py: 'element_xxx()' and 'content_xxx()' is renamed to 'create_element_xxx()' and 'create_content_xxx()'
