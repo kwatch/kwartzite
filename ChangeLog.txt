@@ -2,6 +2,17 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.24 (2007-10-08)
+	.- [enhance] users-guide.eruby: added
+	.- [change] PythonTranslator.py: 'element_xxx()' and 'content_xxx()' is renamed to 'create_element_xxx()' and 'create_content_xxx()'
+	.- [change] JavaTranslator.py: 'elementXxx()' and 'contentXxx()' is renamed to 'createElementXxx()' and 'createContentXxx()'
+	.- [refactor] PythonTranslator.py, JavaTranslator.py: 'expand_{element|content}()' is renamed to 'expand_create_{element|content}()'
+	.- [change] PythonTranslator.py: changed to generate '_set_buf(_buf)'
+	.- [change] config.py: default value of FRAGMENT is changed from False to True
+	.- [change] config.py: default value of ATTROBJ is changed from False to True
+	.- [enhance] JavaTranslator.py: --accessors support
+	.- [enhance] JavaTranslator.py: add 'escapeXml()'
+
 : rev.23 (2007-10-07)
 	.- [change] PythonTranslator.py: set _context into self in __ini__()
 	.- [change] PythonTranslator.py: set self._buf.append and self._buf.extend to self._append and self._extend

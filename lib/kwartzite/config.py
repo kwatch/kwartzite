@@ -12,12 +12,12 @@ IDFLAG    = 'all'   # or 'upper', 'lower', 'none'
 ENCODING  = None    # or 'utf-8'
 
 CLASSNAME = '%u_%x'
-BASECLASS = None
+BASECLASS = 'object'
 INTERFACE = None
 PACKAGE   = None
 MAINPROG  = True
 CONTEXT   = True
 NULLOBJ   = False
-FRAGMENT  = False
-ATTROBJ   = None
+FRAGMENT  = True
+ATTROBJ   = True
 ACCESSORS = True

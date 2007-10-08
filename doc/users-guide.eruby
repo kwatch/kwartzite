@@ -1,0 +1,472 @@
+% PYTHON = JAVA = RUBY = nil
+% case @lang
+% when 'python'
+%   PYTHON = true
+%   command = 'pysio2'
+% when 'java'
+%   JAVA = true
+%   command = 'jvsio2'
+% when 'ruby'
+%   RUBY = true
+%   command = 'rbsio2'
+% end
+
+.=document:	Kwartzite User's Guide
+.?lastupdate:	$Date$
+.?release:	$Release$
+.?copyright:	$Copyright$
+
+
+.$ Tutorial
+
+
+.$$ Step1: Compile HTML Template info Python Class
+
+.? my-example1.html
+.-------------------- my-example1.html
+<ul>
+  <li id="mark:item1">foo</li>
+</ul>
+.--------------------
+
+.====================
+$ [%= command %] -t python -o %c.py my-example1.html
+$ more my_example1_html.py
+$ python my_example1_html.py
+.====================
+
+
+.$$ Step2: Define Subclass of Template Class
+
+.--------------------
+from my_example1_html import my_example1_html
+
+{{*class my_example1(my_example1_html):*}}   # define subclass
+
+    {{*def elem_item1(self):*}}    # element
+        self.{{*stag_item1()*}}    # start-tag
+        self.{{*cont_item1()*}}    # contents
+        self.{{*etag_item1()*}}    # end-tag
+
+if __name__ == '__main__':
+    page = my_example1()
+    print page.create_document()
+.--------------------
+
+.====================
+$ python my_example1.py
+.====================
+
+
+.$$ Step3: Add Presentation Logics
+
+.--------------------
+from my_example1_html import my_example1_html
+
+class my_example1(my_example1_html):
+
+    def elem_item1(self):
+        odd = False
+        {{*for item in ['foo', 'bar', 'baz']:*}} # repeat elements
+	    odd = not False
+	    val = odd and 'odd' or 'even'
+            {{*self.set_attr_item1('class', val)*}}      # set attribute
+            {{*self.set_text_item1(item)*}}      # set content data
+            self.stag_item1()
+            self.cont_item1()
+            self.etag_item1()
+
+if __name__ == '__main__':
+    page = my_example1()
+    print page.create_document()
+.--------------------
+
+
+.$$ Step4: Add Context Data
+
+.--------------------
+from my_example1_html import my_example1_html
+
+class my_example1(my_example1_html):
+
+    def elem_item1(self):
+        for item in {{*self.items*}}:         # get context data
+	    self.set_text_item1(item)   # set content
+	    self.stag_item1()
+	    self.cont_item1()
+	    self.etag_item1()
+
+if __name__ == '__main__':
+    items = ['AAA', 'BBB', 'CCC']
+    page = my_example1({{*items=items*}})    # set context data
+    print page.create_document()
+.--------------------
+
+
+
+.$ Examples
+
+
+.$$ Bordered Table #1
+
+
+.--------------------
+<table>
+  <tr id="mark:list" bgcolor="#FFCCCC">
+    <td id="mark:num">123</td>
+    <td id="mark:item">foo</td>
+  </tr>
+  <tr id="dummy:d1" bgcolor="#CCCCFF">
+    <td>456</td>
+    <td>bar</td>
+  </tr>
+</table>
+.--------------------
+
+.--------------------
+from bordered_table_html import bordered_table_html
+
+class bordered_table(bordered_table_html):
+
+    def elem_list(self):
+        i = 0
+	for item in self.list:
+	    i += 1
+	    bgcolor = i % 2 and '#FFCCCC' or '#FFCCCC'
+	    self.set_attr_items('bgcolor', bgcolor)
+	    self.set_text_num(i)
+	    self.set_text_item(item)
+	    self._elem_list()
+	    # self._elem_list() is equivarent to
+	    # super(bordered_table_html, self).elem_list()
+
+if __name__ == '__main__':
+    L = ['<AAA>', 'B&B', '"CCC"']
+    print bordered_table1(list=L).create_document()
+.--------------------
+
+
+
+.$$ Bordered Table #2
+
+.--------------------
+<table id="mark:table">
+  <tr id="mark:list" bgcolor="#FFCCCC">
+    <td id="text:num">123</td>
+    <td id="text:item">foo</td>
+  </tr>
+  <tr id="mark:list2" bgcolor="#CCCCFF">
+    <td>123</td>
+    <td>foo</td>
+  </tr>
+</table>
+.--------------------
+
+.--------------------
+from bordered_table2_html import bordered_table2_html
+
+class bordered_table2(bordered_table2_html):
+
+    ## get bgcolor attribute values
+    colors = (
+        bordered_table2_html.attr_list['bgcolor'],
+        bordered_table2_html.attr_list2['bgcolor'],
+    )
+
+    def elem_table(self):
+	## repeat element of id="mark:list" instead of content
+        self.stag_table()
+	for i, item in enumerate(self.items):
+	    color = self.colors[i%2]
+	    self.attr_list['bgcolor'] = color
+	    self.set_text_num(i)
+	    self.set_text_item(item)
+            self.elem_list()   # expand other element
+        self.etag_table()
+
+if __name__ == '__main__':
+    L = ['<AAA>', 'B&B', '"CCC"']
+    print bordered_table2(list=L),
+.--------------------
+
+
+.$$ Conditonal Branch
+
+.? message.html
+.-------------------- message.html
+<div id="mark:message">
+  <p id="mark:error" style="color:red">
+    ERROR: <span id="mark:error_msg">error message.</span>
+  </p>
+  <p id="mark:warning" style="color:blue">
+    WARNING: <span id="mark:warning_msg">warning message.</span>
+  </p>
+  <p id="mark:info">
+    <span id="mark:info_msg">information message.</span>
+  </p>
+</div>
+.--------------------
+
+.? message_page.py
+.-------------------- message_page.py
+from message_html import message_html
+
+class message_page(message_html):
+
+    def elem_message(self):
+        if self.error:
+	    self.set_text_error_msg(self.error)
+	    self.elem_error()
+	elif self.warning:
+	    self.set_text_warning_msg(self.warning)
+	    self.elem_warning()
+	elif self.info:
+	    self.set_text_info_msg(self.info)
+	    self.elem_info()
+
+if __name__ == '__main__':
+    warning = 'You should read Kwartizte User's Guide.'
+    print message_page(warning=warning).create_document(),
+.--------------------
+
+
+.$$ Form
+
+.? form1.html
+.-------------------- form1.html
+<form id="user_form" action="/cgi-bin/form1.cgi" method="post">
+  Name: <input type="text" id="user_name" name="name" value="">
+  <br>
+  Gender:
+    <input type="radio" id="user_gender_m" name="gender" value="m">Man
+    <input type="radio" id="user_gender_w" name="gender" value="w">Woman
+  <br>
+  Birth year:
+    <select id="user_birth_year" name="birth_year">
+      <option id="mark:years">1980</option>
+      <option>1981</option>
+      <option>1982</option>
+    </select>
+  <br>
+  <input type="submit">
+</form>
+.--------------------
+
+.? form1_page.py
+.-------------------- form1_page.py
+from form1_html import form1_html
+
+class form1_page(form1_html):
+
+    def elem_user_form(self):
+        user = self.user or {}
+        ## name
+	self.set_attr_user_name('value', user.get('name'))
+	## gender
+	if user.get('gender') == 'm':
+	    self.set_attr_user_gender_m('checked', 'checked')
+	elif user.get('gender') == 'w':
+	    self.set_attr_user_gender_w('checked', 'checked')
+        ##
+	self._elem_user_form()
+
+    def elem_years(self):
+	## birth year options
+	user = self.user or {}
+	birth_year = user.get('birth_year')
+	for y in xrange(1970, 2001):
+	    selected = y == birth_year and 'selected' or None
+	    self.set_attr_years('selected', selected)
+	    self._elem_years()
+
+if __name__ == '__main__':
+    user = {
+        'name':  'James Bond',
+	'gender': 'm',
+	'birth_year': '1985',
+    }
+    print form1_page(user=user).create_document(),
+.--------------------
+
+
+.? Form1.java
+.-------------------- Form1.java
+import java.util.*;
+
+public class Form1 extends Form1Html {
+
+    Map user;
+    public Form1(Map user) { this.user = user; }
+
+    public void elemUserForm() {
+        setAttrUserName("value", (String)user.get("name"));
+	String gender = (String)user.get("gender");
+	if (gender != null) {
+	    if (gender.equals("m")) {
+	        setAttrUserGenderM("checked", "checked", false);
+	    } else if (gender.equals("w")) {
+	        setAttrUserGenderW("checked", "checked", false);
+	    }
+        }
+        super.elemUserForm();
+    }
+
+    public void elemUserBirthYear() {
+        Integer val = (Integer)user.get("birth_year");
+	int birth_year = val == null ? -1 : val.intValue();
+	stagUserBirthYear();
+	for (int y = 1980; y <= 2000; y++) {
+	    setTextYears(String.valueOf(y));
+	    setAttrYears("selected", y == birth_year ? "selected" : null, false);
+	    elemYears();
+	}
+	etagUserBirthYear();
+    }
+
+    public static void main(String[] args) {
+        Map user = new HashMap();
+	user.put("name", "James Bond");
+	user.put("gender", "m");
+	user.put("birth_year", new Integer(1985));
+        Form1 page = new Form1(user);
+        System.out.print(page.createDocument());
+    }
+}
+.--------------------
+
+
+.$$ Layout Template
+
+
+.? page-content.html
+.-------------------- page-content.html
+<html>
+  <body>
+    <h1 id="title">Menu list</h1>
+    <div id="pagecontent">
+      <ul id="menulist">
+        <li id="mark:menuitem">Login</li>
+      </ul>
+    </div>
+  </body>
+</html>
+.--------------------
+
+.? page_content.py
+.-------------------- page_content.py
+from page_content_html import page_content_html
+class page_content(page_content_html):
+    def elem_menulist(self):
+        self.stag_menulist()
+        for item in self.menulist:
+	    self.set_text_menuitem(item)
+	    self.cont_menulist()
+        self.etag_menulist()
+
+if __name__ == '__main__':
+    menulist = ['Mail', 'Blog', 'Shopping', 'Logout']
+    print page_content(menulist=menulist).create_document(),
+.--------------------
+
+.? PageContent.java
+.-------------------- PageContent.java
+import java.util.*;
+
+class PageContent extends PageContentHtml {
+
+    List menulist;
+    public PageContent() { super(); }
+    public PageContent(List menulist) { this.menulist = menulist; }
+
+    public void elemMenulist() {
+        stagMenulist();
+	for (Iterator it = menulist.iterator(); it.hasNext(); ) {
+	    String item = (String)it.next();
+	    setTextMenuitem(item);
+	    contMenulist();
+	}
+	etagMenulist();
+    }
+
+    public static void main(String[] args) {
+        List menulist = new ArrayList();
+	menulist.add("Mail");
+	menulist.add("Blog");
+	menulist.add("Shopping");
+	menulist.add("Logout");
+	System.out.print(new PageContent(menulist).createDocument());
+    }
+
+}
+.--------------------
+
+.? page-layout.html
+.-------------------- page-layout.html
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+          "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en" id="mark:html">
+  <head>
+    <title id="mark:doctitle">TITLE</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  </head>
+  <body>
+    <title id="title">TITLE</title>
+    <div id="maincontent">
+      ...
+      ...
+      ...
+    </div>
+  </body>
+</html>
+.--------------------
+
+.? page_layout.py
+.-------------------- page_layout.py
+from page_layout_html import page_layout_html
+
+class page_layout(page_layout_html):
+
+    def elem_html(self):
+        page = self.page
+        self.text_doctitle = page.text_title
+	self.text_title    = page.text_title
+        self.text_maincontent = page.create_content_pagecontent()
+	self._elem_html()
+
+if __name__ == '__main__':
+    from page_content import page_content
+    page = page_content(title='Top page',
+           	        menulist=['Mail', 'Blog', 'Logout'])
+    print page_layout(page=page).create_document(),
+.--------------------
+
+.? PageLayout.java
+.-------------------- PageLayout.java
+import java.util.*;
+
+class PageLayout extends PageLayoutHtml {
+
+    PageContent page;
+    public PageLayout() { super(); }
+    public PageLayout(PageContent page) { this.page = page; }
+
+    public void elemHtml() {
+        setTextDoctitle(page.getTextTitle(), false);
+	setTextTitle(page.getTextTitle(), false);
+	setTextMaincontent(page.createContentPagecontent(), false);
+	super.elemHtml();
+    }
+
+    public static void main(String[] args) {
+        List menulist = new ArrayList();
+	menulist.add("Mail");
+	menulist.add("Blog");
+	menulist.add("Shopping");
+	menulist.add("Logout");
+        PageContent page = new PageContent(menulist);
+        PageLayout layout = new PageLayout(page);
+	System.out.print(layout.createDocument());
+    }
+}
+.--------------------
+

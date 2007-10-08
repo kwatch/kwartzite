@@ -34,21 +34,22 @@ class JavaTranslator(Translator):
 
 
     _property_descriptions = (
-        ('classname' , 'str' , 'classname pattern'),
-        ('baseclass' , 'str' , 'parent class name'),
-        ('interface' , 'str' , 'interface name to implements'),
-        ('package'   , 'str' , 'package name'),
-        ('encoding'  , 'str' , 'encoding name'),
-        ('mainprog'  , 'bool', 'define main program or not'),
-        ('context'   , 'bool', 'use context object in constructor or not'),
-        ('nullobj'   , 'bool', 'use NULL object instead of None'),
-        ('fragment'  , 'bool', 'define elementXxx() and contentXxx()'),
+        ('classname' , 'str'  , 'classname pattern'),
+        ('baseclass' , 'str'  , 'parent class name'),
+        ('interface' , 'str'  , 'interface name to implements'),
+        ('package'   , 'str'  , 'package name'),
+        ('encoding'  , 'str'  , 'encoding name'),
+        ('mainprog'  , 'bool' , 'define main program or not'),
+        ('context'   , 'bool' , 'use context object in constructor or not'),
+        ('nullobj'   , 'bool' , 'use NULL object instead of None'),
+        ('fragment'  , 'bool' , 'define createElementXxx() and createContentXxx()'),
+        ('accessors' , 'bool' , 'define set{Text|Attr|Node}Xxx() or not'),
     )
     define_properties(_property_descriptions, baseclass='Object')
     if locals()['baseclass'] == 'object': locals()['baseclass'] = 'Object'
 
 
-    def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, **properties):
+    def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, accessors=None, **properties):
         if classname is not None:  self.classname = classname
         if baseclass is not None:  self.baseclass = baseclass
         if interface is not None:  self.interface = interface
@@ -58,6 +59,7 @@ class JavaTranslator(Translator):
         if context   is not None:  self.context   = context
         if nullobj   is not None:  self.nullobj   = nullobj
         if fragment  is not None:  self.fragment  = fragment
+        if accessors is not None:  self.accessors = accessors
         self.nullvalue = nullobj and 'NULL' or 'null'
 
 
@@ -67,14 +69,6 @@ class JavaTranslator(Translator):
         filename   = properties.get('filename') or template_info.filename
         classname  = properties.get('classname') or self.classname
         classname = self.build_classname(filename, pattern=classname, **properties)
-        baseclass  = self.baseclass
-        interface  = self.interface
-        package    = self.package
-        encoding   = self.encoding
-        mainprog   = self.mainprog
-        context    = self.context
-        nullobj    = self.nullobj
-        fragment   = self.fragment
         buf = []
         extend = buf.extend
         if filename:
@@ -82,23 +76,24 @@ class JavaTranslator(Translator):
             '// generated from ', filename, '\n'
             '\n'
             ))
-        if package:
+        if self.package:
             extend((
-            'package ', package, ';\n'
+            'package ', self.package, ';\n'
             '\n'
             ))
-        s = interface and ' implements ' + interface or ''
+        s = self.interface and ' implements ' + self.interface or ''
         extend((
             'import java.util.Map;\n'
             'import java.util.HashMap;\n'
             'import java.util.Iterator;\n'
+            #'static import kwartzite.util.TemplateUtility.*;\n'
             '\n'
             '\n'
-            'public class ', classname, ' extends ', baseclass, s, ' {\n'
+            'public class ', classname, ' extends ', self.baseclass, s, ' {\n'
             '\n'
             '    protected StringBuffer _buf = new StringBuffer();\n'
-            ))
-        if context:
+            ,))
+        if self.context:
             extend((
             '    protected Map _context;\n'
             '\n'
@@ -108,56 +103,72 @@ class JavaTranslator(Translator):
             '\n'
             '    public ', classname, '(Map _context) {\n'
             '        this._context = _context;\n'
-            ))
+            ,))
         else:
             extend((
             '\n'
             '    public ', classname, '() {\n'
-            ))
+            ,))
         for name, elem in elem_table.iteritems():
             extend(('        init', c(name), '();\n', ))
         extend((
             '    }\n'
-            '\n',
-            ))
+            '\n'
+            ,))
+        #
         self.expand_utils(buf)
+        #
         extend((
             '\n'
-            '    public String createDocument() {\n',
-            ))
-        self.expand_items(buf, stmt_list)
+            '    public String createDocument() {\n'
+            ,))
+        self.expand_stmt_list(buf, stmt_list)
         extend((
+            '        appendDocument(new StringBuffer());\n'
             '        return _buf.toString();\n'
             '    }\n'
-            '\n',
-            ))
+            '\n'
+            ,))
+        #
+        extend((
+            '    public void appendDocument(StringBuffer buf) {\n'
+            '        _buf = buf;\n'
+            ,))
+        self.expand_stmt_list(buf, stmt_list)
+        extend((
+            '    }\n'
+            '\n'
+            ,))
+        #
         for name, elem in elem_table.iteritems():
             extend((
             '\n'
+            '    //\n'
             '    // element \'', name, '\'\n'
+            '    //\n'
             '\n'
-            ))
+            ,))
             self.expand_init(buf, elem); buf.append("\n")
             if elem.directive.name != 'mark':  continue
             self.expand_elem(buf, elem); buf.append("\n")
             self.expand_stag(buf, elem); buf.append("\n")
             self.expand_cont(buf, elem); buf.append("\n")
             self.expand_etag(buf, elem); buf.append("\n")
-            if not fragment: continue
-            self.expand_element(buf, elem); buf.append("\n")
-            self.expand_content(buf, elem); buf.append("\n")
-        if mainprog:
+            if self.fragment:
+                self.expand_create_element(buf, elem); buf.append("\n")
+                self.expand_create_content(buf, elem); buf.append("\n")
+        if self.mainprog:
             extend((
             '\n'
             '    // for test\n'
             '    public static void main(String[] args) {\n'
             '        System.out.print(new ', classname, '().createDocument());\n'
             '    }\n'
-            ))
+            ,))
         buf.append(
             '\n'
             '}\n'
-            )
+            ,)
         return ''.join(buf)
 
 
@@ -167,31 +178,62 @@ class JavaTranslator(Translator):
             '\n'
             '    //public static final Object ', self.nullvalue, ' = new Object();\n'
             '    public static final String ', self.nullvalue, ' = new String("");\n'
-            ))
+            ,))
         buf.extend((
             '\n'
-            '    public static String toStr(Object val) {\n'
-            '        return val == null ? "" : val.toString();\n'
+            '    public static String toStr(Object value) {\n'
+            '        return value == null ? "" : value.toString();\n'
             '    }\n'
             '\n'
-            '    public static String toStr(String val) {\n'
-            '        return val == null ? "" : val;\n'
+            '    public static String toStr(String value) {\n'
+            '        return value == null ? "" : value;\n'
+            '    }\n'
+            '\n'
+            #'    public static String escapeXml(String value) {\n'
+            #'        if (value == null) return "";\n'
+            #'        StringBuffer buf = null;\n'
+            #'        String s = null;\n'
+            #'        for (int i = 0, n = value.length(); i < n; i++) {\n'
+            #'            char ch = value.charAt(i);\n'
+            #'            switch (ch) {\n'
+            #'            case \'&\':  s = "&amp;";  break;\n'
+            #'            case \'<\':  s = "&lt;";   break;\n'
+            #'            case \'>\':  s = "&gt;";   break;\n'
+            #'            case \'"\':  s = "&quot;"; break;\n'
+            #'            }\n'
+            #'            if (s != null) {\n'
+            #'                if (buf == null) {\n'
+            #'                    (buf = new StringBuffer()).append(value.substring(0, i));\n'
+            #'                }\n'
+            #'                buf.append(s);\n'
+            #'                s = null;\n'
+            #'            } else {\n'
+            #'                if (buf != null) buf.append(ch);\n'
+            #'            }\n'
+            #'        }\n'
+            #'        return buf == null ? value : buf.toString();\n'
+            #'    }\n'
+            '    public static String escapeXml(String value) {\n'
+            '        if (value == null) return "";\n'
+            '        return value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\\"","&quot;");\n'
+            '        \n'
             '    }\n'
             '\n'
             '    public void appendAttribute(Map attr) {\n'
-            '        for (Iterator it = attr.keySet().iterator(); it.hasNext(); ) {\n'
-            '            Object key = it.next();\n'
-            '            Object val = attr.get(key);\n'
+            '        for (Iterator it = attr.entrySet().iterator(); it.hasNext(); ) {\n'
+            '            Map.Entry entry = (Map.Entry)it.next();\n'
+            '            Object key = entry.getKey();\n'
+            '            Object val = entry.getValue();\n'
             '            if (val != ', self.nullvalue, ') {\n'
             '                _buf.append(\' \').append(key).append("=\\"").append(toStr(val)).append(\'"\');\n'
             #'                _buf.append(\' \').append(key).append("=\\"").append(val).append(\'"\');\n'
             '            }\n'
             '        }\n'
             '    }\n'
-            ))
+            ,))
 
 
-    def expand_items(self, buf, stmt_list):
+    def expand_stmt_list(self, buf, stmt_list):
         def flush(L, buf):
             if L:
                 buf.append('        _buf')
@@ -236,11 +278,65 @@ class JavaTranslator(Translator):
         initval = not elem.cont_text_p() and (' = '+self.nullvalue) or ''
         d_name = elem.directive.name
         if d_name in ('mark', 'attr', 'textattr'):
-            extend(('    public Map attr', c(name), ';\n', ))
+            if not self.accessors:
+                extend((
+                    '    public Map attr', c(name), ';\n'
+                    ,))
+            else:
+                extend((
+                    '    protected Map attr', c(name), ';\n'
+                    '    public String getAttr', c(name), '(String name) {\n'
+                    '        return (String)attr', c(name), '.get(name);\n'
+                    '    }\n'
+                    '    public void setAttr', c(name), '(String name, String value, boolean escape) {\n'
+                    '        attr', c(name), '.put(name, value == null ? null : (escape ? escapeXml(value) : value));\n'
+                    '    }\n'
+                    '    public void setAttr', c(name), '(String name, String value) {\n'
+                    '        setAttr', c(name), '(name, value, true);\n'
+                    #'        attr', c(name), '.put(name, value == null ? null : escapeXml(value));\n'
+                    '    }\n'
+                    '\n'
+                    ,))
         if d_name in ('mark', 'text', 'textattr'):
-            extend(('    public String text', c(name), initval, ';\n', ))
+            if not self.accessors:
+                extend((
+                    '    public String text', c(name), initval, ';\n'
+                    ,))
+            else:
+                extend((
+                    '    protected String text', c(name), initval, ';\n'
+                    '    public String getText', c(name), '() {\n'
+                    '        return text', c(name), ';\n'
+                    '    }\n'
+                    '    public void setText', c(name), '(String value, boolean escape) {\n'
+                    '        text', c(name), ' = value == null ? null : (escape ? escapeXml(value) : value);\n'
+                    '    }\n'
+                    '    public void setText', c(name), '(String value) {\n'
+                    '        setText', c(name), '(value, true);\n'
+                    #'        text', c(name), ' = value == null ? null : escapeXml(value);\n'
+                    '    }\n'
+                    '\n'
+                    ,))
         if d_name in ('mark', 'node'):
-            extend(('    public String node', c(name), ' = ', self.nullvalue, ';\n', ))
+            if not self.accessors:
+                extend((
+                    '    public String node', c(name), ' = ', self.nullvalue, ';\n'
+                    ,))
+            else:
+                extend((
+                    '    protected String node', c(name), ' = ', self.nullvalue, ';\n'
+                    #'    public String getNode', c(name), '() {\n'
+                    #'        return node', c(name), ';\n'
+                    #'    }\n'
+                    '    public void setNode', c(name), '(String value, boolean escape) {\n'
+                    '        node', c(name), ' = value == null ? null : (escape ? escapeXml(value) : value);\n'
+                    '    }\n'
+                    '    public void setNode', c(name), '(String value) {\n'
+                    '        setNode', c(name), '(value, true);\n'
+                    '    }\n'
+                    '\n'
+                    ,))
+
         ## start of init_xxx
         extend((
             '\n'
@@ -328,7 +424,7 @@ class JavaTranslator(Translator):
             '        }\n',
             ))
             if elem.cont:
-                self.expand_items(buf, elem.cont)
+                self.expand_stmt_list(buf, elem.cont)
         buf.append(
             '    }\n'
             )
@@ -362,36 +458,27 @@ class JavaTranslator(Translator):
             )
 
 
-    def _expand_element_or_content(self, buf, elem, kind):
-        s1, s2 = kind == 'element' and ('element', 'elem') or ('content', 'cont')
+    def _expand_create_element_or_content(self, buf, elem, kind):
+        s1, s2 = kind == 'element' and ('Element', 'elem') or ('Content', 'cont')
         name = elem.name
         extend = buf.extend
         extend((
-            '    public void ', s1, c(name), '(Map _context, StringBuffer _buf) {\n'
-            '        this._context = _context;\n'
+            '    public void append', s1, c(name), '(StringBuffer _buf) {\n'
             '        this._buf = _buf;\n'
             '        ', s2, c(name), '();\n'
             '    }\n'
             #'\n'
-            '    public void ', s1, c(name), '(StringBuffer _buf) {\n'
-            '        ', s1, c(name), '(new HashMap(), _buf);\n'
-            '    }\n'
-            #'\n'
-            '    public String ', s1, c(name), '(Map _context) {\n'
-            '        StringBuffer _buf = new StringBuffer();\n'
-            '        ', s1, c(name), '(_context, _buf);\n'
+            '    public String create', s1, c(name), '() {\n'
+            '        this._buf = new StringBuffer();\n'
+            '        ', s2, c(name), '();\n'
             '        return _buf.toString();\n'
-            '    }\n'
-            #'\n'
-            '    public String ', s1, c(name), '() {\n'
-            '        return ', s1, c(name), '(new HashMap());\n'
             '    }\n'
             ,))
 
 
-    def expand_element(self, buf, elem):
-        self._expand_element_or_content(buf, elem, 'element')
+    def expand_create_element(self, buf, elem):
+        self._expand_create_element_or_content(buf, elem, 'element')
 
 
-    def expand_content(self, buf, elem):
-        self._expand_element_or_content(buf, elem, 'content')
+    def expand_create_content(self, buf, elem):
+        self._expand_create_element_or_content(buf, elem, 'content')

@@ -27,17 +27,17 @@ class PythonTranslator(Translator):
 
 
     _property_descriptions = (
-        ('classname' , 'str' , 'classname pattern'),
-        ('baseclass' , 'str' , 'parent class name'),
-        ('encoding'  , 'str' , 'encoding name'),
-        ('mainprog'  , 'bool', 'define main program or not'),
-        ('context'   , 'bool', 'use context object in constructor or not'),
-        ('nullobj'   , 'bool', 'use NULL object instead of None'),
-        ('fragment'  , 'bool', 'define element_xxx() and content_xxx()'),
-        ('attrobj'   , 'bool', 'use kwartzite.attribute.Attribute instead of dict'),
-        ('accessors' , 'bool', 'define set_{text|attr|node}_xxx() or not'),
+        ('classname' , 'str'  , 'classname pattern'),
+        ('baseclass' , 'str'  , 'parent class name'),
+        ('encoding'  , 'str'  , 'encoding name'),
+        ('mainprog'  , 'bool' , 'define main program or not'),
+        ('context'   , 'bool' , 'use context object in constructor or not'),
+        ('nullobj'   , 'bool' , 'use NULL object instead of None'),
+        ('fragment'  , 'bool' , 'define element_xxx() and content_xxx()'),
+        ('attrobj'   , 'bool' , 'use kwartzite.attribute.Attribute instead of dict'),
+        ('accessors' , 'bool' , 'define set_{text|attr|node}_xxx() or not'),
     )
-    define_properties(_property_descriptions, baseclass='object', attrobj=True)
+    define_properties(_property_descriptions, baseclass='object')
     if locals()['baseclass'] is 'Object':  locals()['baseclass'] = 'object'
 
 
@@ -105,13 +105,23 @@ class PythonTranslator(Translator):
         else:
             extend(('    def __init__(self):\n'
                     ,))
-        extend((    '        self._buf = []\n'
-                    '        self._append = self._buf.append\n'
-                    '        self._extend = self._buf.extend\n'
+        extend((    '        self._set_buf([])\n'
                     ,))
         for name, elem in elem_table.iteritems():
-            extend(('        self.init_', name, '()\n', ))
+            #extend(('        self.init_', name, '()\n', ))
+            directive = elem.directive
+            if directive.name in ('mark', 'attr', 'textattr'):
+                extend((
+                    '        self.attr_', name, ' = self.attr_', name, '.copy()\n'
+                    ,))
         buf.append('\n')
+        #
+        extend((    '    def _set_buf(self, _buf):\n'
+                    '        self._buf = _buf\n'
+                    '        self._append = _buf.append\n'
+                    '        self._extend = _buf.extend\n'
+                    '\n'
+                    ,))
         #
         if not self.attrobj:
             extend(('    def _append_attr(self, attr, nullvalue=None):\n'
@@ -126,7 +136,7 @@ class PythonTranslator(Translator):
                     '        _append = self._append\n'
                     '        _extend = self._extend\n'
                     ,))
-        self.expand_items(buf, stmt_list)
+        self.expand_stmt_list(buf, stmt_list)
         extend((    "        return ''.join(self._buf)\n"
                     "\n"
                     ,))
@@ -142,22 +152,16 @@ class PythonTranslator(Translator):
                 self.expand_stag(buf, elem); buf.append("\n")
                 self.expand_cont(buf, elem); buf.append("\n")
                 self.expand_etag(buf, elem); buf.append("\n")
+                self.expand_aliases(buf, elem); buf.append("\n")
                 if fragment:
-                    self.expand_element(buf, elem); buf.append("\n")
-                    self.expand_content(buf, elem); buf.append("\n")
-                extend((
-                    "    _init_", name, " = init_", name, "\n"
-                    "    _elem_", name, " = elem_", name, "\n"
-                    "    _stag_", name, " = stag_", name, "\n"
-                    "    _cont_", name, " = cont_", name, "\n"
-                    "    _etag_", name, " = etag_", name, "\n"
-                    ,))
+                    self.expand_create_element(buf, elem); buf.append("\n")
+                    self.expand_create_content(buf, elem); buf.append("\n")
             else:
                 self.expand_init(buf, elem); buf.append("\n")
                 extend((
                     "    _init_", name, " = init_", name, "\n"
+                    "\n"
                     ,))
-            buf.append("\n")
             if self.accessors:
                 self.expand_accessors(buf, elem)
         #extend((
@@ -177,7 +181,7 @@ class PythonTranslator(Translator):
         return ''.join(buf)
 
 
-    def expand_items(self, buf, stmt_list):
+    def expand_stmt_list(self, buf, stmt_list):
         def flush(L, buf):
             if not L:
                 return
@@ -239,32 +243,39 @@ class PythonTranslator(Translator):
         name = elem.name
         extend = buf.extend
         d_name = elem.directive.name
-        extend(("    def init_", name, "(self):\n", ))
+        #extend(("    def init_", name, "(self):\n", ))
         ## node_xxx
         if d_name in ('mark', 'node'):
-            extend(("        self.node_", name, " = ", self.nullvalue, "\n", ))
+            #extend(("        self.node_", name, " = ", self.nullvalue, "\n", ))
+            extend(("    node_", name, " = ", self.nullvalue, "\n", ))
         ## text_xxx
         if d_name in ('mark', 'text', 'textattr'):
             if elem.cont_text_p():
                 s = elem.cont[0]
-                extend(("        self.text_", name, " = '''", q(s), "'''\n", ))
+                #extend(("        self.text_", name, " = '''", q(s), "'''\n", ))
+                extend(("    text_", name, " = '''", q(s), "'''\n", ))
             else:
-                extend(("        self.text_", name, " = ", self.nullvalue, "\n", ))
+                #extend(("        self.text_", name, " = ", self.nullvalue, "\n", ))
+                extend(("    text_", name, " = ", self.nullvalue, "\n", ))
         ## attr_xxx
         if d_name not in ('mark', 'attr', 'textattr'):
             pass
         elif not self.attrobj:
-            extend(('        self.attr_', name, ' = ', ))
+            #extend(('        self.attr_', name, ' = ', ))
+            extend(('    attr_', name, ' = ', ))
             attr = elem.attr
             if attr.is_empty():
                 buf.append('{}\n')
             else:
                 buf.append('{\n')
                 for space, aname, avalue in attr:
-                    extend(("            '", q(aname), "':'", q(avalue), "',\n", ))
-                buf.append('        }\n')
+                    #extend(("            '", q(aname), "':'", q(avalue), "',\n", ))
+                    extend(("        '", q(aname), "':'", q(avalue), "',\n", ))
+                #buf.append('        }\n')
+                buf.append('    }\n')
         else:
-            extend(('        self.attr_', name, ' = Attribute', ))
+            #extend(('        self.attr_', name, ' = Attribute', ))
+            extend(('    attr_', name, ' = Attribute', ))
             attr = elem.attr
             if attr.is_empty():
                 buf.append('()\n')
@@ -276,8 +287,10 @@ class PythonTranslator(Translator):
                     #else:
                     #    s = repr(avalue)
                     #s = "'" + q(avalue) + "'"
-                    extend(("            ('", aname, "','", q(avalue), "',", repr(space), "),\n", ))
-                buf.append('        ))\n')
+                    #extend(("            ('", aname, "','", q(avalue), "',", repr(space), "),\n", ))
+                    extend(("        ('", aname, "','", q(avalue), "',", repr(space), "),\n", ))
+                #buf.append('        ))\n')
+                buf.append('    ))\n')
 
 
     def expand_elem(self, buf, elem):
@@ -332,7 +345,7 @@ class PythonTranslator(Translator):
             if not elem.cont:
                 return
             extend(('            return\n', ))
-            self.expand_items(buf, elem.cont)
+            self.expand_stmt_list(buf, elem.cont)
 
 
     def expand_etag(self, buf, elem):
@@ -363,31 +376,38 @@ class PythonTranslator(Translator):
             ,))
 
 
-    def expand_element(self, buf, elem):
-        self._expand_element_or_content(buf, elem, 'element')
+    def expand_aliases(self, buf, elem):
+        extend = buf.extend
+        name = elem.name
+        extend((
+            #"    _init_", name, " = init_", name, "\n"
+            "    _elem_", name, " = elem_", name, "\n"
+            "    _stag_", name, " = stag_", name, "\n"
+            "    _cont_", name, " = cont_", name, "\n"
+            "    _etag_", name, " = etag_", name, "\n"
+            "\n"
+            ,))
 
 
-    def expand_content(self, buf, elem):
-        self._expand_element_or_content(buf, elem, 'content')
+    def expand_create_element(self, buf, elem):
+        self._expand_create_element_or_content(buf, elem, 'element')
 
 
-    def _expand_element_or_content(self, buf, elem, kind):
+    def expand_create_content(self, buf, elem):
+        self._expand_create_element_or_content(buf, elem, 'content')
+
+
+    def _expand_create_element_or_content(self, buf, elem, kind):
         s1, s2 = kind == 'element' and ('element', 'elem') or ('content', 'cont')
         name = elem.name
         extend = buf.extend
         extend((
-            "    def ", s1, "_", name, "(self, _context=None, _buf=None, **context):\n"
-            "        self._buf = _buf if _buf is not None else []\n"
-            "        self._context = _context if _context is not None else context\n"
+            "    def create_", s1, "_", name, "(self, _buf=None):\n"
+            "        if _buf is None: self._set_buf([])\n"
+            "        else:            self._set_buf(_buf)\n"
             "        self.", s2, "_", name, "()\n"
-            "        return ''.join(self._buf) if _buf is None else None\n"
-            #"        if _buf is None: self._buf = []\n"
-            #"        else:            self._buf = _buf\n"
-            #"        if _context is None: self._context = context\n"
-            #"        else:                self._context = _context\n"
-            #"        self.", s2, "_", name, "()\n"
-            #"        if _buf is None: return ''.join(self._buf)\n"
-            #"        else:            return None\n"
+            "        if _buf is None: return ''.join(self._buf)\n"
+            "        else:            return None\n"
             ,))
 
 
@@ -411,7 +431,7 @@ class PythonTranslator(Translator):
             "        if value is ", self.nullvalue, ":\n"
             "            self.attr_", name, "[name] = ", self.nullvalue, "\n"
             "        else:\n"
-            "            self.attr_", name, "[name] = escape_xml(to_s(value))\n"
+            "            self.attr_", name, "[name] = escape_xml(to_str(value))\n"
             "\n"
             "    def del_attr_", name, "(self, name):\n"
             "        self.attr_", name, ".pop(name, None)\n"
