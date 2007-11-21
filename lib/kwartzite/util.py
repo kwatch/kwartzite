@@ -81,7 +81,7 @@ def isword(s):
 
 
 def camelize(string):
-    return ''.join([ s.capitalize() for s in re.split(r'[^a-zA-Z0-9]', string) ])
+    return ''.join([ s[0].upper() + s[1:] for s in re.split(r'[^a-zA-Z0-9]', string) if s ])
 
 
 

@@ -2,6 +2,9 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.26 (2007-10-11)
+	.- [bugfix] util.py: camelize() upcase only the first character
+
 : rev.25 (2007-10-08)
 	.- [enhance] PythonTranslator.py, JavaTranslator.py: add 'echo()'
 	.- [update] users-guide.py
