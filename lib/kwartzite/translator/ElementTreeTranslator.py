@@ -48,7 +48,7 @@ class ElementTreeTranslator(Translator):
         ('mainprog'  , 'bool', 'define main program or not'),
         ('context'   , 'bool', 'use context object in constructor or not'),
     )
-    define_properties(_property_descriptions, baseclass='object')
+    define_properties(_property_descriptions, baseclass='object', context=True)
     if locals()['baseclass'] is 'Object':  locals()['baseclass'] = 'object'
 
 

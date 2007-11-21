@@ -37,7 +37,7 @@ class PythonTranslator(Translator):
         ('attrobj'   , 'bool' , 'use kwartzite.attribute.Attribute instead of dict'),
         ('accessors' , 'bool' , 'define set_{text|attr|node}_xxx() or not'),
     )
-    define_properties(_property_descriptions, baseclass='object')
+    define_properties(_property_descriptions, baseclass='object', context=True)
     if locals()['baseclass'] is 'Object':  locals()['baseclass'] = 'object'
 
 

@@ -43,9 +43,9 @@ class JavaTranslator(Translator):
         ('context'   , 'bool' , 'use context object in constructor or not'),
         ('nullobj'   , 'bool' , 'use NULL object instead of None'),
         ('fragment'  , 'bool' , 'define createElementXxx() and createContentXxx()'),
-        ('accessors' , 'bool' , 'define set{Text|Attr|Node}Xxx() or not'),
+        ('accessors' , 'bool' , 'define setter and getter or not'),
     )
-    define_properties(_property_descriptions, baseclass='Object')
+    define_properties(_property_descriptions, baseclass='Object', context=False)
     if locals()['baseclass'] == 'object': locals()['baseclass'] = 'Object'
 
 
@@ -372,14 +372,14 @@ class JavaTranslator(Translator):
             else:
                 extend((
                     '    protected Map attr', c(name), ';\n'
-                    '    public String getAttr', c(name), '(String name) {\n'
+                    '    public String attr', c(name), '(String name) {\n'
                     '        return (String)attr', c(name), '.get(name);\n'
                     '    }\n'
-                    '    public void setAttr', c(name), '(String name, String value, boolean escape) {\n'
+                    '    public void put', c(name), '(String name, String value, boolean escape) {\n'
                     '        attr', c(name), '.put(name, value == null ? null : (escape ? escapeXml(value) : value));\n'
                     '    }\n'
-                    '    public void setAttr', c(name), '(String name, String value) {\n'
-                    '        setAttr', c(name), '(name, value, true);\n'
+                    '    public void put', c(name), '(String name, String value) {\n'
+                    '        put', c(name), '(name, value, true);\n'
                     #'        attr', c(name), '.put(name, value == null ? null : escapeXml(value));\n'
                     '    }\n'
                     '\n'
@@ -392,16 +392,32 @@ class JavaTranslator(Translator):
             else:
                 extend((
                     '    protected String text', c(name), initval, ';\n'
-                    '    public String getText', c(name), '() {\n'
+                    '    public String get', c(name), '() {\n'
                     '        return text', c(name), ';\n'
                     '    }\n'
-                    '    public void setText', c(name), '(String value, boolean escape) {\n'
+                    '    public void set', c(name), '(String value, boolean escape) {\n'
                     '        text', c(name), ' = value == null ? null : (escape ? escapeXml(value) : value);\n'
                     '    }\n'
-                    '    public void setText', c(name), '(String value) {\n'
-                    '        setText', c(name), '(value, true);\n'
+                    '    public void set', c(name), '(String value) {\n'
+                    '        set', c(name), '(value, true);\n'
                     #'        text', c(name), ' = value == null ? null : escapeXml(value);\n'
                     '    }\n'
+                    ,))
+                if elem.cont_text_p():
+                    assert len(elem.cont) == 1
+                    if re.match(r'^[-+]?\d+$', elem.cont[0]):
+                        extend((
+                    '    public void set', c(name), '(int value) {\n'
+                    '        text', c(name), ' = String.valueOf(value);\n'
+                    '    }\n'
+                    ,))
+                    elif re.match(r'^[-+]?\d+\.\d+$', elem.cont[0]):
+                        extend((
+                    '    public void set', c(name), '(double value) {\n'
+                    '        text', c(name), ' = String.valueOf(value);\n'
+                    '    }\n'
+                    ,))
+                extend((
                     '\n'
                     ,))
         if d_name in ('mark', 'node'):

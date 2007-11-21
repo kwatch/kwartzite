@@ -2,6 +2,12 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.28 (2007-11-22)
+	.- [change] config.py: default value of 'context' is changed from True to None
+	.- [change] PythonTranslator.py: default value of 'context' is set as True
+	.- [change] ElementTreeTranslator.py: default value of 'context' is set as True
+	.- [change] JavaTranslator.py: default value of 'context' is set as True
+
 : rev.27 (2007-11-21)
 	.- [change] JavaTranslator.py: change definition of escapeXml() for performance
 	.- [change] JavaTranslator.py: change escapeXml() and toStr() from static to non-static
