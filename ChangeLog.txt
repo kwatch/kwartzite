@@ -2,6 +2,9 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.29 (2007-11-22)
+	.- [enhance] JavaTranslator.py: '--java5' supported (default True)
+
 : rev.28 (2007-11-22)
 	.- [change] config.py: default value of 'context' is changed from True to None
 	.- [change] PythonTranslator.py: default value of 'context' is set as True

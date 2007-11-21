@@ -44,12 +44,13 @@ class JavaTranslator(Translator):
         ('nullobj'   , 'bool' , 'use NULL object instead of None'),
         ('fragment'  , 'bool' , 'define createElementXxx() and createContentXxx()'),
         ('accessors' , 'bool' , 'define setter and getter or not'),
+        ('java5'     , 'bool' , 'use StringBuilder and Map<String,String> if true'),
     )
     define_properties(_property_descriptions, baseclass='Object', context=False)
     if locals()['baseclass'] == 'object': locals()['baseclass'] = 'Object'
 
 
-    def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, accessors=None, **properties):
+    def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, accessors=None, java5=None, **properties):
         if classname is not None:  self.classname = classname
         if baseclass is not None:  self.baseclass = baseclass
         if interface is not None:  self.interface = interface
@@ -60,6 +61,7 @@ class JavaTranslator(Translator):
         if nullobj   is not None:  self.nullobj   = nullobj
         if fragment  is not None:  self.fragment  = fragment
         if accessors is not None:  self.accessors = accessors
+        if java5     is not None:  self.java5      = java5
         self.nullvalue = nullobj and 'NULL' or 'null'
 
 
@@ -69,6 +71,7 @@ class JavaTranslator(Translator):
         filename   = properties.get('filename') or template_info.filename
         classname  = properties.get('classname') or self.classname
         classname = self.build_classname(filename, pattern=classname, **properties)
+        bufclass = self.java5 and 'StringBuilder' or 'StringBuffer'
         buf = []
         extend = buf.extend
         if filename:
@@ -84,25 +87,26 @@ class JavaTranslator(Translator):
         s = self.interface and ' implements ' + self.interface or ''
         extend((
             'import java.util.Map;\n'
-            'import java.util.HashMap;\n'
-            'import java.util.Iterator;\n'
+            'import java.util.HashMap;\n',
+            not self.java5 and 'import java.util.Iterator;\n' or '',
             #'static import kwartzite.util.TemplateUtility.*;\n'
             '\n'
             '\n'
             'public class ', classname, ' extends ', self.baseclass, s, ' {\n'
             '\n'
-            '    protected StringBuffer _buf;\n'
+            '    protected ', bufclass, ' _buf;\n'
             '    protected int _bufsize = 1024;\n'
             ,))
         if self.context:
+            subtype = self.java5 and '<String,Object>' or ''
             extend((
-            '    protected Map _context;\n'
+            '    protected Map', subtype, ' _context;\n'
             '\n'
             '    public ', classname, '() {\n'
-            '         this(new HashMap());\n'
+            '         this(new HashMap', subtype, '());\n'
             '    }\n'
             '\n'
-            '    public ', classname, '(Map _context) {\n'
+            '    public ', classname, '(Map', subtype, ' _context) {\n'
             '        this._context = _context;\n'
             ,))
         else:
@@ -125,14 +129,14 @@ class JavaTranslator(Translator):
             ,))
         #self.expand_stmt_list(buf, stmt_list)
         extend((
-            '        appendDocument(new StringBuffer(_bufsize));\n'
+            '        appendDocument(new ', bufclass, '(_bufsize));\n'
             '        return _buf.toString();\n'
             '    }\n'
             '\n'
             ,))
         #
         extend((
-            '    public void appendDocument(StringBuffer buf) {\n'
+            '    public void appendDocument(', bufclass, ' buf) {\n'
             '        _buf = buf;\n'
             '        initDocument();\n'
             ,))
@@ -178,6 +182,8 @@ class JavaTranslator(Translator):
 
 
     def expand_utils(self, buf):
+        subtype = self.java5 and '<String,String>' or ''
+        bufclass = self.java5 and 'StringBuilder' or 'StringBuffer'
         if self.nullobj:
             buf.extend((
             '\n'
@@ -203,7 +209,7 @@ class JavaTranslator(Translator):
             #'    public String escapeXml(String str) {\n'
             #'        if (str == null) return "";\n'
             #'        int len = str.length();\n'
-            #'        StringBuffer buf = new StringBuffer();\n'
+            #'        ', bufclass, ' buf = new ', bufclass, '();\n'
             #'        for (int i = 0; i < len; i++) {\n'
             #'            char ch = str.charAt(i);\n'
             #'            if      (ch == \'&\') buf.append("&amp;");\n'
@@ -217,7 +223,7 @@ class JavaTranslator(Translator):
             #'\n'
             #'    public String escapeXml(String value) {\n'
             #'        if (value == null) return "";\n'
-            #'        StringBuffer buf = null;\n'
+            #'        ', bufclass, ' buf = null;\n'
             #'        String s = null;\n'
             #'        for (int i = 0, n = value.length(); i < n; i++) {\n'
             #'            char ch = value.charAt(i);\n'
@@ -229,7 +235,7 @@ class JavaTranslator(Translator):
             #'            }\n'
             #'            if (s != null) {\n'
             #'                if (buf == null) {\n'
-            #'                    (buf = new StringBuffer()).append(value.substring(0, i));\n'
+            #'                    (buf = new ', bufclass, '()).append(value.substring(0, i));\n'
             #'                }\n'
             #'                buf.append(s);\n'
             #'                s = null;\n'
@@ -243,17 +249,17 @@ class JavaTranslator(Translator):
             #'    public String escapeXml(String str) {\n'
             #'        if (str == null) return "";\n'
             #'        int len = str.length();\n'
-            #'        StringBuffer buf = null;\n'
+            #'        ', bufclass, ' buf = null;\n'
             #'        for (int i = 0; i < len; i++) {\n'
             #'            char ch = str.charAt(i);\n'
             #'            if (ch == \'&\')\n'
-            #'                (buf == null ? (buf = new StringBuffer()).append(str.substring(0, i)) : buf).append("&amp;");\n'
+            #'                (buf == null ? (buf = new ', bufclass, '()).append(str.substring(0, i)) : buf).append("&amp;");\n'
             #'            else if (ch == \'<\')\n'
-            #'                (buf == null ? (buf = new StringBuffer()).append(str.substring(0, i)) : buf).append("&lt;");\n'
+            #'                (buf == null ? (buf = new ', bufclass, '()).append(str.substring(0, i)) : buf).append("&lt;");\n'
             #'            else if (ch == \'>\')\n'
-            #'                (buf == null ? (buf = new StringBuffer()).append(str.substring(0, i)) : buf).append("&gt;");\n'
+            #'                (buf == null ? (buf = new ', bufclass, '()).append(str.substring(0, i)) : buf).append("&gt;");\n'
             #'            else if (ch == \'"\')\n'
-            #'                (buf == null ? (buf = new StringBuffer()).append(str.substring(0, i)) : buf).append("&quot;");\n'
+            #'                (buf == null ? (buf = new ', bufclass, '()).append(str.substring(0, i)) : buf).append("&quot;");\n'
             #'            else\n'
             #'                if (buf != null) buf.append(ch);\n'
             #'        }\n'
@@ -263,25 +269,25 @@ class JavaTranslator(Translator):
             '    public String escapeXml(String str) {\n'
             '        if (str == null) return "";\n'
             '        int len = str.length();\n'
-            '        StringBuffer buf = null;\n'
+            '        ', bufclass, ' buf = null;\n'
             '        char ch;\n'
             '        int i;\n'
             '        for (i = 0; i < len; i++) {\n'
             '            ch = str.charAt(i);\n'
             '            if (ch == \'&\') {\n'
-            '                (buf = new StringBuffer()).append(str.substring(0, i)).append("&amp;");\n'
+            '                (buf = new ', bufclass, '()).append(str.substring(0, i)).append("&amp;");\n'
             '                break;\n'
             '            }\n'
             '            else if (ch == \'<\') {\n'
-            '                (buf = new StringBuffer()).append(str.substring(0, i)).append("&lt;");\n'
+            '                (buf = new ', bufclass, '()).append(str.substring(0, i)).append("&lt;");\n'
             '                break;\n'
             '            }\n'
             '            else if (ch == \'>\') {\n'
-            '                (buf = new StringBuffer()).append(str.substring(0, i)).append("&gt;");\n'
+            '                (buf = new ', bufclass, '()).append(str.substring(0, i)).append("&gt;");\n'
             '                break;\n'
             '            }\n'
             '            else if (ch == \'"\') {\n'
-            '                (buf = new StringBuffer()).append(str.substring(0, i)).append("&quot;");\n'
+            '                (buf = new ', bufclass, '()).append(str.substring(0, i)).append("&quot;");\n'
             '                break;\n'
             '            }\n'
             '        }\n'
@@ -306,11 +312,22 @@ class JavaTranslator(Translator):
             '        _buf.append(value.toString());\n'
             '    }\n'
             '\n'
-            '    public void appendAttribute(Map attr) {\n'
+            '    public void appendAttribute(Map', subtype, ' attr) {\n'
+            ,))
+        if self.java5:
+            buf.extend((
+            '        for (Map.Entry<String,String> entry: attr.entrySet()) {\n'
+            '            String key = entry.getKey();\n'
+            '            String val = entry.getValue();\n'
+            ,))
+        else:
+            buf.extend((
             '        for (Iterator it = attr.entrySet().iterator(); it.hasNext(); ) {\n'
             '            Map.Entry entry = (Map.Entry)it.next();\n'
             '            Object key = entry.getKey();\n'
             '            Object val = entry.getValue();\n'
+            ,))
+        buf.extend((
             '            if (val != ', self.nullvalue, ') {\n'
             '                _buf.append(\' \').append(key).append("=\\"").append(toStr(val)).append(\'"\');\n'
             #'                _buf.append(\' \').append(key).append("=\\"").append(val).append(\'"\');\n'
@@ -364,14 +381,15 @@ class JavaTranslator(Translator):
         ## instance variable declaration
         initval = not elem.cont_text_p() and (' = '+self.nullvalue) or ''
         d_name = elem.directive.name
+        subtype = self.java5 and '<String,String>' or ''
         if d_name in ('mark', 'attr', 'textattr'):
             if not self.accessors:
                 extend((
-                    '    public Map attr', c(name), ';\n'
+                    '    public Map', subtype, ' attr', c(name), ';\n'
                     ,))
             else:
                 extend((
-                    '    protected Map attr', c(name), ';\n'
+                    '    protected Map', subtype, ' attr', c(name), ';\n'
                     '    public String attr', c(name), '(String name) {\n'
                     '        return (String)attr', c(name), '.get(name);\n'
                     '    }\n'
@@ -448,7 +466,7 @@ class JavaTranslator(Translator):
         ## attr_xxx
         if d_name in ('mark', 'attr', 'textattr'):
             extend((
-            '        attr', c(name), ' = new HashMap();\n'
+            '        attr', c(name), ' = new HashMap', subtype, '();\n'
             ))
             for space, aname, avalue in elem.attr:
                 if isinstance(avalue, Expression):
@@ -563,16 +581,17 @@ class JavaTranslator(Translator):
 
     def _expand_create_element_or_content(self, buf, elem, kind):
         s1, s2 = kind == 'element' and ('Element', 'elem') or ('Content', 'cont')
+        bufclass = self.java5 and 'StringBuilder' or 'StringBuffer'
         name = elem.name
         extend = buf.extend
         extend((
-            '    public void append', s1, c(name), '(StringBuffer _buf) {\n'
+            '    public void append', s1, c(name), '(', bufclass, ' _buf) {\n'
             '        this._buf = _buf;\n'
             '        ', s2, c(name), '();\n'
             '    }\n'
             #'\n'
             '    public String create', s1, c(name), '() {\n'
-            '        this._buf = new StringBuffer();\n'
+            '        this._buf = new ', bufclass, '();\n'
             '        ', s2, c(name), '();\n'
             '        return _buf.toString();\n'
             '    }\n'

@@ -21,3 +21,4 @@ NULLOBJ   = False
 FRAGMENT  = True
 ATTROBJ   = True
 ACCESSORS = True
+JAVA5     = True
