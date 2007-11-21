@@ -2,6 +2,14 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+: rev.27 (2007-11-21)
+	.- [change] JavaTranslator.py: change definition of escapeXml() for performance
+	.- [change] JavaTranslator.py: change escapeXml() and toStr() from static to non-static
+	.- [change] JavaTranslator.py: don't create new StringBuffer() in constructor
+	.- [bugfix] JavaTranslator.py: html was added twice in createDocument() and appendDocument()
+	.- [enhance] JavaTranslator.py: add initDocument()
+	.- [change] JavaTranslator.py: add 'throws Exception' to 'public static void main()'
+
 : rev.26 (2007-10-11)
 	.- [bugfix] util.py: camelize() upcase only the first character
 
