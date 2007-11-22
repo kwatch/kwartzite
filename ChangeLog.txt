@@ -2,10 +2,18 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
-: rev.29 (2007-11-22)
+: rev.30 (2007-11-22)
+	.- [refactor] test_main.py: correct 'testdata/test_main/*.expected'
+	.- [change] config.py: changed to define classes instead of variables
+	.- [change] config.py: change default value of FRAGMENT from True to False
+	.- [change] *Translator.py, *Parser.py: each class changed to inherit config class
+	.- [enhance] PythonTranslator.py: add 'append_document()'
+	.- [bugfix] ElemenTreeTranslator.py: fixed typo 'sefl' to 'self'
+
+: rev.29 (2007-11-21)
 	.- [enhance] JavaTranslator.py: '--java5' supported (default True)
 
-: rev.28 (2007-11-22)
+: rev.28 (2007-11-21)
 	.- [change] config.py: default value of 'context' is changed from True to None
 	.- [change] PythonTranslator.py: default value of 'context' is set as True
 	.- [change] ElementTreeTranslator.py: default value of 'context' is set as True

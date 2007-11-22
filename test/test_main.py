@@ -31,8 +31,8 @@ EXPECTED_XML_PYTHON  = readfile('test_xml_python.expected')
 EXPECTED_XML_JAVA    = readfile('test_xml_java.expected')
 EXPECTED_ETREE_ETREE = readfile('test_etree_etree.expected')
 
-PYTHON_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes --attrobj=False'
-JAVA_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --interface=kwartzite.Template --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes'
+PYTHON_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes --attrobj=False --accesors=false'
+JAVA_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --interface=kwartzite.Template --encoding=UTF8 --mainprog=false --context=no --nullobj=true --fragment=yes --java5=no' #--accessors=false
 ETREE_TRANSLATOR_PROPERTIES = '--classname=%F --baseclass=TemplateObject --encoding=UTF8 --mainprog=false'
 
 
@@ -108,7 +108,10 @@ class MainTest(unittest.TestCase, TestCaseHelper):
             classname = self.classname
             if classname is None:
                 basename = os.path.splitext(filename)[0]
-                classname = re.sub('[^\w]', '_', basename) + '_html'
+                if re.search(r'java', testname):
+                    classname = ''.join([ s[0].upper() + s[1:] for s in re.split('[^\w]', basename) ]) + 'Html'
+                else:
+                    classname = re.sub('[^\w]', '_', basename) + '_html'
             #
             expected = self.expected
             if expected is True:
@@ -154,20 +157,23 @@ class MainTest(unittest.TestCase, TestCaseHelper):
             pass
 
 
-    def _shell_command(infile=None, outfile=None, options=None):
+    def _shell_command(infile=None, outfile=None, options=None, classname=None):
         vars = {
             'datadir':'testdata/test_main',
             'infile':infile,
             'outfile':outfile,
             'options':options,
+            'classname':classname,
         }
         buf = []
         append = buf.append
         append(    'cp %(datadir)s/input.html %(infile)s\n')
         append(    'pysio2 %(options)s -o %(outfile)s %(infile)s\n')
-        if options.find('--classname=') < 0:
-            append("perl -pi -e 's/%(infile)s/FILENAME/g; s/%(class)s/CLASSNAME/g' %(outfile)s\n")
-            vars['class'] = re.sub(r'[^\w]', '_', infile)
+        #if options.find('--classname=') < 0:
+        #    append("perl -pi -e 's/%(infile)s/FILENAME/g; s/%(class)s/CLASSNAME/g' %(outfile)s\n")
+        #    vars['class'] = re.sub(r'[^\w]', '_', infile)
+        if classname:
+            append("perl -pi -e 's/%(infile)s/FILENAME/g; s/%(classname)s/CLASSNAME/g' %(outfile)s\n")
         append(    'mv %(outfile)s %(datadir)s\n')
         append(    'rm %(infile)s\n')
         return ''.join(buf) % vars
@@ -181,18 +187,19 @@ class MainTest(unittest.TestCase, TestCaseHelper):
         self._test()
 
     shell_command_to_generate_test_text_python_expected = \
-        _shell_command('test-text-python.html', 'test_text_python.expected', '')
+        _shell_command('test-text-python.html', 'test_text_python.expected', '', 'test_text_python_html')
 
 
     def test_text_java(self):
         #self.debug     = True
         self.input     = INPUT_HTML
         self.expected  = EXPECTED_TEXT_JAVA  # or True
+        #self.classname = 'TestTextJavaHtml'
         self.options   = "-t java"
         self._test()
 
     shell_command_to_generate_test_text_java_expected = \
-        _shell_command('test-text-java.html', 'test_text_java.expected', '-t java')
+        _shell_command('test-text-java.html', 'test_text_java.expected', '-t java', 'TestTextJavaHtml')
 
 
     def test_xml_python(self):
@@ -203,18 +210,19 @@ class MainTest(unittest.TestCase, TestCaseHelper):
         self._test()
 
     shell_command_to_generate_test_xml_python_expected = \
-        _shell_command('test-xml-python.html', 'test_xml_python.expected', '-p xml')
+        _shell_command('test-xml-python.html', 'test_xml_python.expected', '-p xml', 'test_xml_python_html')
 
 
     def test_xml_java(self):
         #self.debug     = True
         self.input     = INPUT_HTML
         self.expected  = EXPECTED_XML_JAVA  # or True
+        #self.classname = 'TestXmlJavaHtml'
         self.options   = "-pxml -tjava"
         self._test()
 
     shell_command_to_generate_test_xml_java_expected = \
-        _shell_command('test-xml-java.html', 'test_xml_java.expected', '-pxml -tjava')
+        _shell_command('test-xml-java.html', 'test_xml_java.expected', '-pxml -tjava', 'TestXmlJavaHtml')
 
 
     def test_rexml_rexml(self):
@@ -225,7 +233,7 @@ class MainTest(unittest.TestCase, TestCaseHelper):
         self._test()
 
     shell_command_to_generate_test_etree_etree_expected = \
-        _shell_command('test-etree-etree.html', 'test_etree_etree.expected', '-tetree')
+        _shell_command('test-etree-etree.html', 'test_etree_etree.expected', '-tetree', 'test_etree_etree_html')
 
 
     def test_out_file_1(self):
@@ -269,8 +277,8 @@ class MainTest(unittest.TestCase, TestCaseHelper):
         #self.debug     = True
         self.input     = INPUT_HTML
         self.expected  = EXPECTED_TEXT_JAVA
-        self.classname = 'TestJavaClassnameHtml'
-        self.options   = "-t java --classname=%B%X"
+        self.classname = 'TestJavaClassname_Html_view'
+        self.options   = "-t java --classname=%B_%X_view"
         self._test()
 
 
@@ -284,20 +292,23 @@ class MainTest(unittest.TestCase, TestCaseHelper):
     shell_command_to_generate_test_python_properties_expected_file = \
         _shell_command('test-python-properties.html',
                        'test_python_properties.expected',
-                       '-tpython '+PYTHON_TRANSLATOR_PROPERTIES)
+                       '-tpython '+PYTHON_TRANSLATOR_PROPERTIES,
+                       'test_python_properties_html')
 
 
     def test_java_properties(self):
         #self.debug     = True
         self.input     = INPUT_HTML
         self.expected  = True
+        #self.classname = 'TestJavaPropertiesHtml'
         self.options   = '-tjava '+JAVA_TRANSLATOR_PROPERTIES
         self._test()
 
     shell_command_to_generate_test_java_properties_expected_file = \
         _shell_command('test-java-properties.html',
                        'test_java_properties.expected',
-                       '-tjava '+JAVA_TRANSLATOR_PROPERTIES)
+                       '-tjava '+JAVA_TRANSLATOR_PROPERTIES,
+                       'TestJavaPropertiesHtml')
 
 
 
@@ -313,6 +324,8 @@ def test_main():
 
 
 if __name__ == '__main__':
+
+    ## usage: python test_main.py COMMAND > hoge.sh; sh -x hoge.sh
     if len(sys.argv) >= 2 and sys.argv[1] == 'COMMAND':
         for s in dir(MainTest):
             if s.startswith('shell_command'):

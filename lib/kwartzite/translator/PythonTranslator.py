@@ -6,7 +6,8 @@
 
 
 import os, re
-import kwartzite.config as config
+#import kwartzite.config as config
+from kwartzite.config import PythonTranslatorConfig
 from kwartzite.util import quote, define_properties
 from kwartzite.parser.TextParser import ElementInfo, Expression
 from kwartzite.translator import Translator
@@ -23,7 +24,7 @@ def q(string):
 
 
 
-class PythonTranslator(Translator):
+class PythonTranslator(Translator, PythonTranslatorConfig):
 
 
     _property_descriptions = (
@@ -38,20 +39,19 @@ class PythonTranslator(Translator):
         ('accessors' , 'bool' , 'define set_{text|attr|node}_xxx() or not'),
     )
     define_properties(_property_descriptions, baseclass='object', context=True)
-    if locals()['baseclass'] is 'Object':  locals()['baseclass'] = 'object'
 
 
     def __init__(self, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, attrobj=None, accessors=None, **properties):
         Translator.__init__(self, **properties)
-        if classname   is not None:  self.classname = classname
-        if baseclass   is not None:  self.baseclass = baseclass
-        if encoding    is not None:  self.encoding  = encoding
-        if mainprog    is not None:  self.mainprog  = mainprog
-        if context     is not None:  self.context   = context
-        if nullobj     is not None:  self.nullobj   = nullobj
-        if fragment    is not None:  self.fragment  = fragment
-        if attrobj     is not None:  self.attrobj   = attrobj
-        if accessors   is not None:  self.accessors = accessors
+        if classname   is not None:  self.CLASSNAME = classname
+        if baseclass   is not None:  self.BASECLASS = baseclass
+        if encoding    is not None:  self.ENCODING  = encoding
+        if mainprog    is not None:  self.MAINPROG  = mainprog
+        if context     is not None:  self.CONTEXT   = context
+        if nullobj     is not None:  self.NULLOBJ   = nullobj
+        if fragment    is not None:  self.FRAGMENT  = fragment
+        if attrobj     is not None:  self.ATTROBJ   = attrobj
+        if accessors   is not None:  self.ACCESSORS = accessors
         self.nullvalue = nullobj and 'NULL' or 'None'
 
 
@@ -59,44 +59,37 @@ class PythonTranslator(Translator):
         stmt_list  = template_info.stmt_list
         elem_table = template_info.elem_table
         filename   = properties.get('filename') or template_info.filename
-        classname  = properties.get('classname') or self.classname
+        classname  = properties.get('classname') or self.CLASSNAME
         classname = self.build_classname(filename, pattern=classname, **properties)
-        baseclass  = self.baseclass
-        encoding   = self.encoding
-        mainprog   = self.mainprog
-        context    = self.context
-        nullobj    = self.nullobj
-        fragment   = self.fragment
-        attrobj    = self.attrobj
         buf = []
         extend = buf.extend
         #
-        if encoding:
-            extend(('# -*- coding: ', encoding, " -*-\n", ))
+        if self.ENCODING:
+            extend(('# -*- coding: ', self.ENCODING, " -*-\n", ))
         if filename:
             extend(('## generated from ', filename, '\n', ))
         buf.append('\n')
         #
-        if self.attrobj:
+        if self.ATTROBJ:
             extend(('from kwartzite.attribute import Attribute\n', ))
-        if encoding:
+        if self.ENCODING:
             extend(('from kwartzite.util import escape_xml, generate_tostrfunc\n'
-                    'to_str = generate_tostrfunc(', repr(encoding), ')\n', ))
+                    'to_str = generate_tostrfunc(', repr(self.ENCODING), ')\n', ))
         else:
             extend(('from kwartzite.util import escape_xml, to_str\n', ))
-        if self.nullobj:
+        if self.NULLOBJ:
             extend(('from kwartzite.util import ', self.nullvalue, '\n', ))
-        s = nullobj and ", 'NULL'" or ''
+        s = self.NULLOBJ and ", 'NULL'" or ''
         extend((    'h = escape_xml\n'
                     "__all__ = ['", classname, "', 'escape_xml', 'to_str', 'h'", s, "]\n"
                     '\n'
                     ,))
         #
         extend((    '\n'
-                    'class ', classname, '(', baseclass, '):\n'
+                    'class ', classname, '(', self.BASECLASS, '):\n'
                     '\n'
                     ,))
-        if context:
+        if self.CONTEXT:
             extend(('    def __init__(self, **_context):\n'
                     '        for k, v in _context.iteritems():\n'
                     '            setattr(self, k, v)\n'
@@ -105,8 +98,8 @@ class PythonTranslator(Translator):
         else:
             extend(('    def __init__(self):\n'
                     ,))
-        extend((    '        self._set_buf([])\n'
-                    ,))
+        #extend((    '        self._set_buf([])\n'
+        #            ,))
         for name, elem in elem_table.iteritems():
             #extend(('        self.init_', name, '()\n', ))
             directive = elem.directive
@@ -121,14 +114,22 @@ class PythonTranslator(Translator):
         self.expand_utils(buf, elem)
         #
         extend((    '    def create_document(self):\n'
+                    '        buf = []\n'
+                    '        self.append_document(buf)\n'
+                    '        return \'\'.join(buf)\n'
+                    '\n'
+                    '    _create_document = create_document\n'
+                    '\n'
+                    ,))
+        extend((    '    def append_document(self, buf):\n'
+                    '        self._set_buf(buf)\n'
                     '        _append = self._append\n'
                     '        _extend = self._extend\n'
                     ,))
         self.expand_stmt_list(buf, stmt_list)
-        extend((    "        return ''.join(self._buf)\n"
-                    "\n"
-                    "    _create_document = create_document\n"
-                    "\n"
+        extend((    '\n'
+                    '    _append_document = append_document\n'
+                    '\n'
                     ,))
         #
         for name, elem in elem_table.iteritems():
@@ -143,7 +144,7 @@ class PythonTranslator(Translator):
                 self.expand_cont(buf, elem); buf.append("\n")
                 self.expand_etag(buf, elem); buf.append("\n")
                 self.expand_aliases(buf, elem); buf.append("\n")
-                if fragment:
+                if self.FRAGMENT:
                     self.expand_create_element(buf, elem); buf.append("\n")
                     self.expand_create_content(buf, elem); buf.append("\n")
             else:
@@ -152,7 +153,7 @@ class PythonTranslator(Translator):
                     "    _init_", name, " = init_", name, "\n"
                     "\n"
                     ,))
-            if self.accessors:
+            if self.ACCESSORS:
                 self.expand_accessors(buf, elem)
         #extend((
         #    "\n"
@@ -161,7 +162,7 @@ class PythonTranslator(Translator):
         #    "\n",
         #    ))
         #
-        if mainprog:
+        if self.MAINPROG:
             extend(("\n"
                     "# for test\n"
                     "if __name__ == '__main__':\n"
@@ -216,8 +217,8 @@ class PythonTranslator(Translator):
 
     def expand_attr(self, buf, name):
         extend = buf.extend
-        s = self.nullobj and (", "+self.nullvalue) or ""
-        if self.attrobj:
+        s = self.NULLOBJ and (", "+self.nullvalue) or ""
+        if self.ATTROBJ:
             extend((
             "        self.attr_", name, ".append_to(self._buf", s, ")\n"
             ,))
@@ -250,7 +251,7 @@ class PythonTranslator(Translator):
         ## attr_xxx
         if d_name not in ('mark', 'attr', 'textattr'):
             pass
-        elif not self.attrobj:
+        elif not self.ATTROBJ:
             #extend(('        self.attr_', name, ' = ', ))
             extend(('    attr_', name, ' = ', ))
             attr = elem.attr
@@ -304,7 +305,7 @@ class PythonTranslator(Translator):
             "    def stag_", name, "(self):\n"
             ,))
         if stag.name:
-            s = self.nullobj and (", "+self.nullvalue) or ""
+            s = self.NULLOBJ and (", "+self.nullvalue) or ""
             extend((
             "        _append = self._append\n"
             "        _append('''", stag.head_space or "", "<", stag.name, "''')\n"
@@ -442,7 +443,7 @@ class PythonTranslator(Translator):
                     '\n'
                     ,))
         #
-        if not self.attrobj:
+        if not self.ATTROBJ:
             extend(('    def _append_attr(self, attr, nullvalue=None):\n'
                     '        _extend = self.extend\n'
                     '        for k, v in attr.iteritems():\n'

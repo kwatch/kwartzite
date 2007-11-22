@@ -14,7 +14,7 @@ except:
     import elementtree.ElementTree as ET
 
 
-import kwartzite.config as config
+from kwartzite.config import ElementTreeTranslatorConfig
 from kwartzite.util import escape_xml, h, isword, OrderedDict, define_properties
 from kwartzite.translator import Translator
 
@@ -38,7 +38,7 @@ def walk_thru(elem, func):
 
 
 
-class ElementTreeTranslator(Translator):
+class ElementTreeTranslator(Translator, ElementTreeTranslatorConfig):
 
 
     _property_descriptions = (
@@ -54,11 +54,11 @@ class ElementTreeTranslator(Translator):
 
     def __init__(self, classname=None, baseclass=None, encoding=None, mainprog=None, context=None, **properties):
         Translator.__init__(self, **properties)
-        if classname   is not None:  self.classname = classname
-        if baseclass   is not None:  self.baseclass = baseclass
-        if encoding    is not None:  self.encoding  = encoding
-        if mainprog    is not None:  self.mainprog  = mainprog
-        if context     is not None:  self.context   = context
+        if classname   is not None:  self.CLASSNAME = classname
+        if baseclass   is not None:  self.BASECLASS = baseclass
+        if encoding    is not None:  self.ENCODING  = encoding
+        if mainprog    is not None:  self.MAINPROG  = mainprog
+        if context     is not None:  self.CONTEXT   = context
         ##
         self.num = 0
         self.num_table = {}
@@ -67,14 +67,14 @@ class ElementTreeTranslator(Translator):
     def translate(self, template_info, **properties):
         xmldoc, elem_table, filename = template_info
         if properties.has_key('filename'): filename = properties['filename']
-        classname  = properties.get('classname') or self.classname
+        classname  = properties.get('classname') or self.CLASSNAME
         classname = self.build_classname(filename, pattern=classname, **properties)
         buf = []
         extend = buf.extend
         append = buf.append
         #
-        if self.encoding:
-            append('# -*- coding: %s -*-\n' % self.encoding)
+        if self.ENCODING:
+            append('# -*- coding: %s -*-\n' % self.ENCODING)
         if filename:
             append('## generated from %s\n' % filename)
         append('\n')
@@ -95,9 +95,9 @@ class ElementTreeTranslator(Translator):
         #
         append("\n"
                "class %s(%s):\n"
-               "\n" % (classname, self.baseclass))
+               "\n" % (classname, self.BASECLASS))
         flag = False
-        if self.context:
+        if self.CONTEXT:
             append('    def __init__(self, **_context):\n'
                    '        for k, v in _context.iteritems():\n'
                    '            setattr(self, k, v)\n'
@@ -109,7 +109,7 @@ class ElementTreeTranslator(Translator):
             d_name, d_arg = directive.name, directive.arg
             if d_name in ('mark', 'attr', 'textattr'):
                 if not flag:
-                    append("    def __init__(sefl):\n")
+                    append("    def __init__(self):\n")
                     flag = True
                 append("        self.attr_%s = self.attr_%s.copy()\n" % (d_arg, d_arg))
         if flag:
@@ -139,7 +139,7 @@ class ElementTreeTranslator(Translator):
                    "\n" % d_arg)
             self.expand_elem(buf, elem, elem_table, directive)
         #
-        if self.mainprog:
+        if self.MAINPROG:
             append("\n"
                    "# for test\n"
                    "if __name__ == '__main__':\n"

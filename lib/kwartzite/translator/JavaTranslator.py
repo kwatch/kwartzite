@@ -6,7 +6,8 @@
 
 
 import os, re
-import kwartzite.config as config
+#import kwartzite.config as config
+from kwartzite.config import JavaTranslatorConfig
 from kwartzite.util import qquote, define_properties
 from kwartzite.parser.TextParser import ElementInfo, Expression
 from kwartzite.translator import Translator
@@ -30,7 +31,7 @@ def c(name):
 
 
 
-class JavaTranslator(Translator):
+class JavaTranslator(Translator, JavaTranslatorConfig):
 
 
     _property_descriptions = (
@@ -47,21 +48,20 @@ class JavaTranslator(Translator):
         ('java5'     , 'bool' , 'use StringBuilder and Map<String,String> if true'),
     )
     define_properties(_property_descriptions, baseclass='Object', context=False)
-    if locals()['baseclass'] == 'object': locals()['baseclass'] = 'Object'
 
 
     def __init__(self, classname=None, baseclass=None, interface=None, package=None, encoding=None, mainprog=None, context=None, nullobj=None, fragment=None, accessors=None, java5=None, **properties):
-        if classname is not None:  self.classname = classname
-        if baseclass is not None:  self.baseclass = baseclass
-        if interface is not None:  self.interface = interface
-        if package   is not None:  self.package   = package
-        if encoding  is not None:  self.encoding  = encoding
-        if mainprog  is not None:  self.mainprog  = mainprog
-        if context   is not None:  self.context   = context
-        if nullobj   is not None:  self.nullobj   = nullobj
-        if fragment  is not None:  self.fragment  = fragment
-        if accessors is not None:  self.accessors = accessors
-        if java5     is not None:  self.java5      = java5
+        if classname is not None:  self.CLASSNAME = classname
+        if baseclass is not None:  self.BASECLASS = baseclass
+        if interface is not None:  self.INTERFACE = interface
+        if package   is not None:  self.PACKAGE   = package
+        if encoding  is not None:  self.ENCODING  = encoding
+        if mainprog  is not None:  self.MAINPROG  = mainprog
+        if context   is not None:  self.CONTEXT   = context
+        if nullobj   is not None:  self.NULLOBJ   = nullobj
+        if fragment  is not None:  self.FRAGMENT  = fragment
+        if accessors is not None:  self.ACCESSORS = accessors
+        if java5     is not None:  self.JAVA5     = java5
         self.nullvalue = nullobj and 'NULL' or 'null'
 
 
@@ -69,9 +69,9 @@ class JavaTranslator(Translator):
         stmt_list  = template_info.stmt_list
         elem_table = template_info.elem_table
         filename   = properties.get('filename') or template_info.filename
-        classname  = properties.get('classname') or self.classname
+        classname  = properties.get('classname') or self.CLASSNAME
         classname = self.build_classname(filename, pattern=classname, **properties)
-        bufclass = self.java5 and 'StringBuilder' or 'StringBuffer'
+        bufclass = self.JAVA5 and 'StringBuilder' or 'StringBuffer'
         buf = []
         extend = buf.extend
         if filename:
@@ -79,26 +79,26 @@ class JavaTranslator(Translator):
             '// generated from ', filename, '\n'
             '\n'
             ))
-        if self.package:
+        if self.PACKAGE:
             extend((
-            'package ', self.package, ';\n'
+            'package ', self.PACKAGE, ';\n'
             '\n'
             ))
-        s = self.interface and ' implements ' + self.interface or ''
+        s = self.INTERFACE and ' implements ' + self.INTERFACE or ''
         extend((
             'import java.util.Map;\n'
             'import java.util.HashMap;\n',
-            not self.java5 and 'import java.util.Iterator;\n' or '',
+            not self.JAVA5 and 'import java.util.Iterator;\n' or '',
             #'static import kwartzite.util.TemplateUtility.*;\n'
             '\n'
             '\n'
-            'public class ', classname, ' extends ', self.baseclass, s, ' {\n'
+            'public class ', classname, ' extends ', self.BASECLASS, s, ' {\n'
             '\n'
             '    protected ', bufclass, ' _buf;\n'
             '    protected int _bufsize = 1024;\n'
             ,))
-        if self.context:
-            subtype = self.java5 and '<String,Object>' or ''
+        if self.CONTEXT:
+            subtype = self.JAVA5 and '<String,Object>' or ''
             extend((
             '    protected Map', subtype, ' _context;\n'
             '\n'
@@ -163,10 +163,10 @@ class JavaTranslator(Translator):
             self.expand_stag(buf, elem); buf.append("\n")
             self.expand_cont(buf, elem); buf.append("\n")
             self.expand_etag(buf, elem); buf.append("\n")
-            if self.fragment:
+            if self.FRAGMENT:
                 self.expand_create_element(buf, elem); buf.append("\n")
                 self.expand_create_content(buf, elem); buf.append("\n")
-        if self.mainprog:
+        if self.MAINPROG:
             extend((
             '\n'
             '    // for test\n'
@@ -182,9 +182,9 @@ class JavaTranslator(Translator):
 
 
     def expand_utils(self, buf):
-        subtype = self.java5 and '<String,String>' or ''
-        bufclass = self.java5 and 'StringBuilder' or 'StringBuffer'
-        if self.nullobj:
+        subtype = self.JAVA5 and '<String,String>' or ''
+        bufclass = self.JAVA5 and 'StringBuilder' or 'StringBuffer'
+        if self.NULLOBJ:
             buf.extend((
             '\n'
             '    //public static final Object ', self.nullvalue, ' = new Object();\n'
@@ -314,7 +314,7 @@ class JavaTranslator(Translator):
             '\n'
             '    public void appendAttribute(Map', subtype, ' attr) {\n'
             ,))
-        if self.java5:
+        if self.JAVA5:
             buf.extend((
             '        for (Map.Entry<String,String> entry: attr.entrySet()) {\n'
             '            String key = entry.getKey();\n'
@@ -381,9 +381,9 @@ class JavaTranslator(Translator):
         ## instance variable declaration
         initval = not elem.cont_text_p() and (' = '+self.nullvalue) or ''
         d_name = elem.directive.name
-        subtype = self.java5 and '<String,String>' or ''
+        subtype = self.JAVA5 and '<String,String>' or ''
         if d_name in ('mark', 'attr', 'textattr'):
-            if not self.accessors:
+            if not self.ACCESSORS:
                 extend((
                     '    public Map', subtype, ' attr', c(name), ';\n'
                     ,))
@@ -403,7 +403,7 @@ class JavaTranslator(Translator):
                     '\n'
                     ,))
         if d_name in ('mark', 'text', 'textattr'):
-            if not self.accessors:
+            if not self.ACCESSORS:
                 extend((
                     '    public String text', c(name), initval, ';\n'
                     ,))
@@ -439,7 +439,7 @@ class JavaTranslator(Translator):
                     '\n'
                     ,))
         if d_name in ('mark', 'node'):
-            if not self.accessors:
+            if not self.ACCESSORS:
                 extend((
                     '    public String node', c(name), ' = ', self.nullvalue, ';\n'
                     ,))
@@ -581,7 +581,7 @@ class JavaTranslator(Translator):
 
     def _expand_create_element_or_content(self, buf, elem, kind):
         s1, s2 = kind == 'element' and ('Element', 'elem') or ('Content', 'cont')
-        bufclass = self.java5 and 'StringBuilder' or 'StringBuffer'
+        bufclass = self.JAVA5 and 'StringBuilder' or 'StringBuffer'
         name = elem.name
         extend = buf.extend
         extend((

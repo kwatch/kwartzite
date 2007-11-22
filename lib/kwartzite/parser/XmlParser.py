@@ -7,13 +7,13 @@
 
 import sys, re
 from xml.parsers.expat import ParserCreate
-import kwartzite.config as config
+from kwartzite.config import XmlParserConfig
 from kwartzite.util import escape_xml, h, isword, OrderedDict, define_properties
 from kwartzite.parser.TextParser import TagInfo, BaseParser
 
 
 
-class XmlParser(BaseParser):
+class XmlParser(BaseParser, XmlParserConfig):
 
 
     def parse_file(self, filename):
@@ -52,11 +52,11 @@ class XmlParser(BaseParser):
         import sys; w = sys.stderr.write
         items.append('')   # dummy string
         #
-        if not self.encoding:
-            self.encoding = 'utf-8'
+        if not self.ENCODING:
+            self.ENCODING = 'utf-8'
         def e(s):
             if isinstance(s, unicode):
-                return s.encode(self.encoding)
+                return s.encode(self.ENCODING)
             return s
         #
         def set_tag_string():
@@ -105,7 +105,7 @@ class XmlParser(BaseParser):
         xmlparser.DefaultHandler = default_handler
         #
         #def xml_decl_handler(version, encoding, standalone):
-        #    self.encoding = encoding
+        #    self.ENCODING = encoding
         #
         def end_document_handler():
             set_tag_string()

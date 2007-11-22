@@ -14,7 +14,7 @@ except ImportError:
     import elementtree.ElementTree as ET
 
 
-import kwartzite.config as config
+from kwartzite.config import ElementTreeParserConfig
 from kwartzite.util import escape_xml, h, isword, OrderedDict, define_properties
 from kwartzite.parser import Parser, ParseError
 from kwartzite.parser.TextParser import Directive
@@ -29,7 +29,7 @@ def walk_tree(element, before=None, after=None):
 
 
 
-class ElementTreeParser(Parser):
+class ElementTreeParser(Parser, ElementTreeParserConfig):
 
 
     _property_descriptions = (
@@ -44,9 +44,9 @@ class ElementTreeParser(Parser):
 
     def __init__(self, dattr=None, encoding=None, idflag=None, **properties):
         Parser.__init__(self, **properties)
-        if dattr    is not None:  self.dattr = dattr
-        if encoding is not None:  self.encoding = encoding
-        if idflag   is not None:  self.idflag = idflag
+        if dattr    is not None:  self.DATTR    = dattr
+        if encoding is not None:  self.ENCODING = encoding
+        if idflag   is not None:  self.IDFLAG   = idflag
 
 
     def _parse_document(self, input, parser=None):
@@ -89,7 +89,7 @@ class ElementTreeParser(Parser):
 
 
     def get_directive(self, elem):
-        a_name = self.dattr   # default: 'kw:d'
+        a_name = self.DATTR   # default: 'kw:d'
         a_value = elem.get(a_name)
         if a_value:
             m = re.match(r'^(\w+):(.*)', value)
@@ -107,7 +107,7 @@ class ElementTreeParser(Parser):
                 return Directive(d_name, d_arg, a_name, a_value)
             if re.match(r'^\w+$', a_value):
                 d_name, d_arg = 'mark', a_value
-                idflag = self.idflag
+                idflag = self.IDFLAG
                 if idflag == 'all' or \
                    idflag == 'lower' and d_arg[0].islower() or \
                    idflag == 'upper' and d_arg[0].isupper() :

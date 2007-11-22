@@ -6,7 +6,7 @@
 
 
 import os, re
-import kwartzite.config as config
+from kwartzite.config import TranslatorConfig
 from kwartzite.util import parse_name_pattern, build_values_from_filename
 
 
@@ -28,7 +28,7 @@ class Translator(object):
 
     def build_classname(self, filename, pattern=None, **kwargs):
         values = self._build_values(filename)
-        s = parse_name_pattern(pattern or config.CLASSNAME, values)
+        s = parse_name_pattern(pattern or self.CLASSNAME, values)
         #classname = re.sub('[^\w]', '_', s)
         classname = s
         return classname

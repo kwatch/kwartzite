@@ -6,7 +6,7 @@
 
 
 import re
-import kwartzite.config as config
+from kwartzite.config import ParserConfig, TextParserConfig
 from kwartzite.util import escape_xml, h, isword, OrderedDict, define_properties
 from kwartzite.parser import Parser, ParseError, TemplateInfo
 
@@ -228,7 +228,7 @@ class Directive(object):
 
 
 
-class BaseParser(Parser):
+class BaseParser(Parser, ParserConfig):
 
 
     _property_descriptions = (
@@ -245,10 +245,10 @@ class BaseParser(Parser):
     def __init__(self, dattr=None, encoding=None, idflag=None, delspan=None, escape=None, **properties):
         Parser.__init__(self, **properties)
         self.filename = None
-        if dattr    is not None:  self.dattr = dattr
-        if encoding is not None:  self.encoding = encoding
-        if idflag   is not None:  self.idflag = idflag
-        if delspan  is not None:  self.delspan = delspan
+        if dattr    is not None:  self.DATTR    = dattr
+        if encoding is not None:  self.ENCODING = encoding
+        if idflag   is not None:  self.IDFLAG   = idflag
+        if delspan  is not None:  self.DELSPAN  = delspan
 
 
     def _setup(self, input, filename):
@@ -346,33 +346,34 @@ class BaseParser(Parser):
 
     def _create_elem(self, stag, etag, cont, attr):
         elem = ElementInfo(stag, etag, cont, attr)
-        if self.delspan and elem.stag.name == 'span' and elem.attr.is_empty():
+        if self.DELSPAN and elem.stag.name == 'span' and elem.attr.is_empty():
             elem.stag.clear_as_dummy_tag()
             if elem.etag:
                 elem.etag.clear_as_dummy_tag()
         return elem
 
 
-    _skip_etag_table = dict([ (tagname, True) for tagname in config.NO_ETAGS ])
+    _skip_etag_table = dict([ (tagname, True) for tagname in ParserConfig.NO_ETAGS ])
+
 
     def _skip_etag_p(self, tagname):
         return TextParser._skip_etag_table.get(tagname) and True or False
 
 
     def _get_directive(self, attr, tag):
-        if attr.has(self.dattr):        # kw:d="..."
+        if attr.has(self.DATTR):        # kw:d="..."
             value = attr.get(value)
             if not value:
-                attr.delete(self.dattr)
+                attr.delete(self.DATTR)
                 tag.string = None #tag.rebuild_string(attr)
                 return None
             m = re.match(r'\w+:', value)
             if m:
-                attr.delete(self.dattr)
+                attr.delete(self.DATTR)
                 tag.string = None #tag.rebuild_string(attr)
                 directive_name = m.group(0)[0:-1]
                 directive_arg  = value[len(directive_name)+1:]
-                return Directive(directive_name, directive_arg, self.dattr, value)
+                return Directive(directive_name, directive_arg, self.DATTR, value)
             #else:
             #   return Directive('mark', value, self.dattr, value)
         elif attr.has('id'):            # id="..."
@@ -385,7 +386,7 @@ class BaseParser(Parser):
                 directive_arg  = value[len(directive_name)+1:]
                 return Directive(directive_name, directive_arg, 'id', value)
             elif isword(value):
-                idflag = self.idflag
+                idflag = self.IDFLAG
                 if idflag == 'all' or \
                    idflag == 'upper' and value[0].isupper() or \
                    idflag == 'lower' and value[0].islower():
@@ -485,7 +486,7 @@ class BaseParser(Parser):
 
 
 
-class TextParser(BaseParser):
+class TextParser(BaseParser, TextParserConfig):
     """
     convert presentation data (html) into a list of Statement.
     notice that TextConverter class hanlde html file as text format, not html format.
