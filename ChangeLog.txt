@@ -6,8 +6,11 @@
 .#	.- [change] PythonTranslator.py: accessor name is changed from 'set_text_xxx' to 'set_xxx'
 .#	.- [change] PythonTranslator.py: accessor name is changed from 'set_attr_xxx' to 'put_xxx'
 
+: rev.33 (2008-05-23)
+	.- [add] contrib/java/kwartzite/Engine.java
+
 : rev.32 (2008-05-23)
-	.- [add] contrib/java/kwartizte/Renderable.java
+	.- [add] contrib/java/kwartzite/Renderable.java
 
 : rev.31 (2008-05-23)
 	.- [bugfix] JavaTranslator.py: fix 'quot;' to '&quot;'
