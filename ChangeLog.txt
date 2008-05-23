@@ -2,6 +2,13 @@
 .?lastupdate:	$Date$
 .?version:	$Rev$
 
+.#: rev.31 (2007-11-22)
+.#	.- [change] PythonTranslator.py: accessor name is changed from 'set_text_xxx' to 'set_xxx'
+.#	.- [change] PythonTranslator.py: accessor name is changed from 'set_attr_xxx' to 'put_xxx'
+
+: rev.31 (2008-05-23)
+	.- [bugfix] JavaTranslator.py: fix 'quot;' to '&quot;'
+
 : rev.30 (2007-11-22)
 	.- [refactor] test_main.py: correct 'testdata/test_main/*.expected'
 	.- [change] config.py: changed to define classes instead of variables

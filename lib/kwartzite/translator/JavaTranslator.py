@@ -298,7 +298,7 @@ class JavaTranslator(Translator, JavaTranslatorConfig):
             '            if      (ch == \'&\') buf.append("&amp;");\n'
             '            else if (ch == \'<\') buf.append("&lt;");\n'
             '            else if (ch == \'>\') buf.append("&gt;");\n'
-            '            else if (ch == \'"\') buf.append("quot;");\n'
+            '            else if (ch == \'"\') buf.append("&quot;");\n'
             '            else                buf.append(ch);\n'
             '        }\n'
             '        return buf.toString();\n'
