@@ -6,6 +6,11 @@
 .#	.- [change] PythonTranslator.py: accessor name is changed from 'set_text_xxx' to 'set_xxx'
 .#	.- [change] PythonTranslator.py: accessor name is changed from 'set_attr_xxx' to 'put_xxx'
 
+: rev.34 (2008-05-24)
+	.- [add] contrib/java/kwartzite/KlassLoader.java
+	.- [add] contrib/java/kwartzite/util/FileUtil.java
+	.- [change] contrib/java/kwartzite/Engine.java: split KlassLoader class from Engine.java
+
 : rev.33 (2008-05-23)
 	.- [add] contrib/java/kwartzite/Engine.java
 
