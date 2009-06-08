@@ -154,10 +154,10 @@ class PythonTranslator(Translator, PythonTranslatorConfig):
                     self.expand_create_content(buf, elem); buf.append("\n")
             else:
                 self.expand_init(buf, elem); buf.append("\n")
-                extend((
-                    "    _init_", name, " = init_", name, "\n"
-                    "\n"
-                    ,))
+                #extend((
+                #    "    _init_", name, " = init_", name, "\n"
+                #    "\n"
+                #    ,))
             if self.ACCESSORS:
                 self.expand_accessors(buf, elem)
         #extend((
