@@ -113,7 +113,12 @@ class PythonTranslator(Translator, PythonTranslatorConfig):
         #
         self.expand_utils(buf, elem)
         #
+        extend((    '    def setup(self)\n'
+                    '        pass\n'
+                    '\n'
+                    ,))
         extend((    '    def create_document(self):\n'
+                    '        self.setup()\n'
                     '        buf = []\n'
                     '        self.append_document(buf)\n'
                     '        return \'\'.join(buf)\n'
