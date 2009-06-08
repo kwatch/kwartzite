@@ -415,11 +415,13 @@ class PythonTranslator(Translator, PythonTranslatorConfig):
             extend((
             "    def set_text_", name, "(self, value):\n"
             "        self.text_", name, " = escape_xml(to_str(value))\n"
+            "    set_", name, " = set_text_", name, "\n"
             "\n", ))
         if d_name in ('mark', ):
             extend((
             "    def set_node_", name, "(self, value):\n"
             "        self.node_", name, " = escape_xml(to_str(value))\n"
+            "    replace_", name, " = set_node_", name, "\n"
             "\n", ))
         if d_name in ('mark', 'attr', 'textattr', ):
             extend((
@@ -428,9 +430,11 @@ class PythonTranslator(Translator, PythonTranslatorConfig):
             "            self.attr_", name, "[name] = ", self.nullvalue, "\n"
             "        else:\n"
             "            self.attr_", name, "[name] = escape_xml(to_str(value))\n"
+            "    put_", name, " = set_attr_", name, "\n"
             "\n"
             "    def del_attr_", name, "(self, name):\n"
             "        self.attr_", name, ".pop(name, None)\n"
+            "    pop_", name, " = del_attr_", name, "\n"
             "\n", ))
 
 
