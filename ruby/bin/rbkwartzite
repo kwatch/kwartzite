@@ -1,0 +1,11 @@
+#!/usr/bin/ruby
+
+###
+### $Release: $
+### $Copyright: copyright(c) 2010 kuwata-lab.com all rights reserved $
+### $License: MIT License $
+###
+
+require 'kwartzite'
+require 'kwartzite/main'
+Kwartzite::Main.main()
