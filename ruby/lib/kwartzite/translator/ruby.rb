@@ -165,8 +165,8 @@ module Kwartzite
     def define_elem(elem, mark)
       @buf <<   "  ######## mark:#{mark} ########\n"
       @buf <<   "\n"
-      @buf <<   "  def elem_#{mark}()\n"
-      @buf <<   "    stag_#{mark}()\n"
+      @buf <<   "  def elem_#{mark}(attrs=nil)\n"
+      @buf <<   "    stag_#{mark}(attrs)\n"
       @buf <<   "    cont_#{mark}()\n"
       @buf <<   "    etag_#{mark}()\n"
       @buf <<   "  end\n"
