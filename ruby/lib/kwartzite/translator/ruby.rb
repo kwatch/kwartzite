@@ -171,12 +171,12 @@ module Kwartzite
     end
 
     def define_stag(elem, mark)
-      @buf <<   "  def stag_#{mark}(values=nil)\n"
-      @buf <<   "    if values.nil?\n"
+      @buf <<   "  def stag_#{mark}(attrs=nil)\n"
+      @buf <<   "    if attrs.nil?\n"
       @buf <<   "      @_buf << %Q`#{_crlf(_escape_text(elem.stag.to_s))}`\n"
       @buf <<   "    else\n"
       @buf <<   "      @_buf << %Q`#{elem.stag.l_space}<#{elem.stag.name}`\n"
-      @buf <<   "      attr_#{mark}().merge(values).each_pair do |k, v|\n"
+      @buf <<   "      attr_#{mark}().merge(attrs).each_pair do |k, v|\n"
       @buf <<   "        @_buf << %Q` \#{k}=\"\#{#{@escapefunc}(v)}\"` unless v.nil?\n"
       @buf <<   "      end\n"
       @buf <<   "      @_buf << %Q`>#{_crlf(elem.stag.r_space.to_s)}`\n"
