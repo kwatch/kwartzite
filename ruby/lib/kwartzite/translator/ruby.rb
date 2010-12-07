@@ -46,6 +46,18 @@ module Kwartzite
       @buf <<   "\n"
       @buf <<   "require 'kwartzite/html'\n"
       @buf <<   "\n"
+      print_moduledefs(opts, classname)
+    end
+
+    def print_moduledefs(opts, classname)
+      mod_names = classname.split(/::/)[0...-1]
+      mod_names.each_with_index do |mod_name, i|
+        @buf << ("  " * i) << "module #{mod_name}\n"
+      end
+      (mod_names.length - 1).downto(0) do |i|
+        s = i == 0 ? " unless defined?(#{mod_names.join('::')})" : nil
+        @buf << ("  " * i) << "end#{s}\n"
+      end
       @buf <<   "\n"
     end
 
