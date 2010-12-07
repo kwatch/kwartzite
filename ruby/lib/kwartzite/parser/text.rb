@@ -50,9 +50,11 @@ module Kwartzite
         if kind
           @text  = @input[0, m.begin(0)]
           @input = @input[m.end(0)..-1]
-          return Tag.new(kind, tag_name, attrs, m[0]) \
+          tag =  Tag.new(kind, tag_name, attrs, m[0]) \
                     .set_directive(directive) \
                     .set_spaces(l_space, tail_space, r_space)
+          tag.empty_slash = nil unless empty_slash == '/'
+          return tag
         end
         pos = m.end(0)
       end

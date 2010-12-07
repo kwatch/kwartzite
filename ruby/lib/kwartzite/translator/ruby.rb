@@ -191,7 +191,7 @@ module Kwartzite
       @buf <<   "      attr_#{mark}().merge(attrs).each_pair do |k, v|\n"
       @buf <<   "        @_buf << %Q` \#{k}=\"\#{#{@escapefunc}(v)}\"` unless v.nil?\n"
       @buf <<   "      end\n"
-      @buf <<   "      @_buf << %Q`>#{_crlf(elem.stag.r_space.to_s)}`\n"
+      @buf <<   "      @_buf << %Q`#{_crlf(elem.stag.tail_space.to_s)}#{elem.stag.empty_slash}>#{_crlf(elem.stag.r_space.to_s)}`\n"
       @buf <<   "    end\n"
       @buf <<   "  end\n"
     end

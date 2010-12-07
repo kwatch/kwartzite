@@ -49,6 +49,7 @@ module Kwartzite
     end
 
     attr_accessor :kind, :name, :attrs, :string
+    attr_accessor :empty_slash
 
     def stag?
       @kind == :stag
