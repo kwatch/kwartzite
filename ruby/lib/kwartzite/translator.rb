@@ -13,6 +13,7 @@ module Kwartzite
     ESCAPE_FUNCTION = 'escape'
 
     def initialize(opts={})
+      #: accepts opts[:escapefunc] (default is 'escape').
       @opts = opts
       @escapefunc = opts[:escapefunc] || ESCAPE_FUNCTION
     end
@@ -24,10 +25,12 @@ module Kwartzite
     @registered = {}
 
     def self.register(lang, klass)
+      #: saves klass with lang as key.
       @registered[lang] = klass
     end
 
     def self.get_class(lang)
+      #: returns object associated with lang.
       return @registered[lang]
     end
 

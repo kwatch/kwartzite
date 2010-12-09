@@ -5,6 +5,10 @@
 ###
 
 
+require 'kwartzite/parser'
+require 'kwartzite/translator'
+
+
 module Kwartzite
 
 
@@ -21,13 +25,19 @@ module Kwartzite
     }
 
     def initialize(opts={})
-      @opts = opts.merge(DEFAULTS)
+      #: merges opts and DEFAULTS.
+      @opts = DEFAULTS.merge(opts)
+      #: get parser.
       @parser = _get_parser(@opts)
+      #: get translator.
       @translator = _get_translator(@opts)
     end
 
+    attr_reader :opts
+
     def construct(filename, opts={})
-      opts.merge(@opts)
+      #: parse html file and translate it into class definition.
+      opts = @opts.merge(opts)
       opts[:filename] = filename
       input = opts[:input] || File.open(filename, 'rb') {|f| f.read }
       nodes = @parser.parse(input, filename)

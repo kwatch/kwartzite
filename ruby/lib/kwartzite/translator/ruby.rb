@@ -6,6 +6,7 @@
 
 
 require 'kwartzite/translator'
+require 'kwartzite/util'
 
 
 module Kwartzite
@@ -15,11 +16,13 @@ module Kwartzite
     Translator.register('ruby', self)
 
     def translate(nodes, opts={})
-      opts.update(@opts)
+      opts = opts.merge(@opts)
       filename = opts[:filename]
+      #: accepts opts[:classname].
       classname = Util.name_format(opts[:classname] || '%C_', filename)
-      baseclass = Util.name_format(opts[:baselass] || 'Kwartzite::HtmlTemplate', filename)
-      @buf = buf = ""
+      #: accepts opts[:baseclass].
+      baseclass = Util.name_format(opts[:baseclass] || 'Kwartzite::HtmlTemplate', filename)
+      @buf = ""
       print_header(opts, filename, classname)
       @buf <<   "class #{classname} < #{baseclass}\n"
       @buf <<   "\n"
@@ -36,8 +39,11 @@ module Kwartzite
       #
       @buf <<   "end\n"
       print_footer(opts, filename, classname)
-      return buf
+      #: returns source code of Ruby class.
+      return @buf
     end
+
+    protected
 
     def print_header(opts, filename, classname)
       @buf <<   "##\n"

@@ -14,12 +14,15 @@ module Kwartzite
   class Parser
 
     def initialize(opts={})
-      @directive_attr = opts[:d_attr] || DIRECTIVE_ATTR
+      #: set @d_attr.
+      #: if :d_attr is not passed then use DIRECTIVE_ATTR instead.
+      @d_attr = opts[:d_attr] || DIRECTIVE_ATTR
     end
 
     attr_accessor :d_attr
 
     def parse_file(filename)
+      #: read file and pass it to parse().
       return parse(File.open(filename, 'rb').read, filename)
     end
 
@@ -30,10 +33,12 @@ module Kwartzite
     @registered = {}
 
     def self.register(lang, klass)
+      #: regsiter klass with lang.
       @registered[lang] = klass
     end
 
     def self.get_class(lang)
+      #: return klass object registered with lang.
       return @registered[lang]
     end
 
@@ -52,36 +57,45 @@ module Kwartzite
     attr_accessor :empty_slash
 
     def stag?
+      #: return true if start-tag.
       @kind == :stag
     end
 
     def etag?
+      #: return true if end-tag.
       @kind == :etag
     end
 
     def empty?
+      #: return true if empty-tag.
       @kind == :empty
     end
 
     def set_directive(directive)
+      #: set directive value.
       @directive = directive
+      #: return self.
       return self
     end
 
     def has_directive?
+      #: return true if directive is set.
       !! @directive
     end
 
     attr_accessor :directive
 
     def set_spaces(l_space, tail_space, r_space)
+      #: set left-space, tail-space, and right-space.
       @l_space, @tail_space, @r_space = l_space, tail_space, r_space
+      #: return self.
       return self
     end
 
     attr_accessor :l_space, :tail_space, :r_space
 
     def to_s
+      #: return html tag string.
       s = "#{@l_space}<#{@end_slash}#{@name}"
       @attrs.each {|space, a_name, a_value| s << "#{space}#{a_name}=\"#{a_value}\"" }
       s << "#{@tail_space}#{@empty_slash}>#{@r_space}"
@@ -94,12 +108,16 @@ module Kwartzite
   class Element
 
     def initialize(stag, etag, children)
+      #: normalize child nodes.
       @stag, @etag, @children = stag, etag, normalize(children)
     end
 
     attr_accessor :stag, :etag, :children
 
+    protected
+
     def normalize(nodes)
+      #: concat sequencial strings in nodes into a string.
       arr = []
       return arr unless nodes
       s = ''
@@ -119,6 +137,10 @@ module Kwartzite
       return arr
     end
 
+  end
+
+
+  class ParseError < SyntaxError
   end
 
 

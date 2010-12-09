@@ -7,6 +7,8 @@
 
 require 'cmdoptparser'
 
+require 'kwartzite/director'
+
 
 module Kwartzite
 
@@ -19,7 +21,7 @@ module Kwartzite
 
     attr_accessor :command
 
-    def cmdopt_parser()
+    def _cmdopt_parser()
       parser = CommandOption::Parser.new
       parser.option("-h", "--help").desc("show help")
       parser.option("-v", "--version").desc("show version")
@@ -32,30 +34,34 @@ module Kwartzite
                          .desc("class name format (default: %C_) (see below)")
       parser.option("-o").name('outfile').arg("file")\
                          .desc("output filename format")
-      parser.option("-d").name('outdir').arg("dir")#\
-                         #.desc("output directory")
       return parser
     end
+    private :_cmdopt_parser
 
     def run(argv=ARGV)
-      parser = cmdopt_parser()
+      parser = _cmdopt_parser()
+      #: if invalid command option specified then raises error.
       cmdopt, filenames = parser.parse(argv)
+      #: if '-h' or '--help' specified then prints help message.
       if cmdopt.help
-        help(parser)
+        _help(parser)
         return
       end
+      #: if '-v' or '--version' specified then prints version info.
       if cmdopt.version
         puts Kwartzite::VERSION
         return
       end
-      #
+      #: '-l' specifies lang name.
       opts = {}
-      opts[:lang]      = cmdopt.lang || 'ruby'
-      opts[:parser]    = cmdopt.parser || 'text'
+      opts[:lang]      = cmdopt.lang if cmdopt.lang
+      #: '-p' specifies parser type.
+      opts[:parser]    = cmdopt.parser if cmdopt.parser
+      #: '-c' specifies classname.
       opts[:classname] = cmdopt.classname if cmdopt.classname
+      #: '-o' specifies output filename.
       opts[:outfile]   = cmdopt.outfile if cmdopt.outfile
-      opts[:outdir]    = cmdopt.outdir  if cmdopt.outdir
-      #
+      #: converts files into class definitions.
       director = Director.new(opts)
       filenames.each do |filename|
         output = director.construct(filename)
@@ -63,7 +69,7 @@ module Kwartzite
       end
     end
 
-    def help(cmdopt_parser)
+    def _help(cmdopt_parser)
       puts "rbKwartzite - pure html template engine for web application"
       puts "Usage: #{@command} [..options..] file.html ..."
       puts cmdopt_parser.options_help(:width=>15)
@@ -82,19 +88,22 @@ Names are capitalized when upper case (ex. '%F' => 'FooBarBazHtml')
 
 Examples:
   # ex.1 convert a html file into Ruby class
-  $ #{@command} -c '%B_HTML' foo-bar.html > FooBar_HTML.rb
+  $ #{@command} -c '%BHtml_' foo-bar.html > FooBarHTML_.rb
   $ ruby FooBar_HTML.rb   # optional
-  # ex.2 convert html files into Java class
-  $ #{@command} -c '%B_HTML' -l java foo-bar.html > FooBar_HTML.java
-  # ex.3 convert html files in a directory
-  $ #{@command} -c '%B_HTML' html/*.html -o 'ruby/%B_HTML.rb'
+  # ex.2 convert html files in a directory
+  $ #{@command} -c '%C_' html/*.html -o 'ruby/%C_.rb'
+  # ex.3 convert html files into Java classes
+  $ #{@command} -c '%C_' -l java html/*.html -o 'java/%C_.java'
 END
     end
+    private :_help
 
-    def self.main
-      main = self.new
+    def self.main(argv=ARGV, *args)
+      #: runs Main object with ARGV.
+      main = self.new(*args)
       begin
-        main.run(ARGV)
+        main.run(argv)
+      #: if command option is invalid then print error message to stderr.
       rescue CommandOption::Error => ex
         $stderr.puts "#{main.command}: #{ex.message}"
       end
