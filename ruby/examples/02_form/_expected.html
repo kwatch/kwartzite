@@ -1,0 +1,53 @@
+    <form method="post" action="/sos/user-form.cgi">
+
+      <dl>
+
+        <dt>Name</dt>
+        <dd>
+          <input type="text" name="user.name">
+        </dd>
+
+        <dt>Password</dt>
+        <dd>
+          <input type="password" name="user.password">
+        </dd>
+
+        <dt>Gender</dt>
+        <dd>
+          <label><input type="radio" value="M" checked="checked" name="user.gender">Man</label>
+          <label><input type="radio" value="W" name="user.gender">Woman</label>
+        </dd>
+
+        <dt>Favorite</dt>
+        <dd>
+          <select name="user.favorite">
+            <option>-</option>
+            <option value="haruhi">Haruhi Suzumiya</option>
+            <option value="mikuru">Mikuru Asahina</option>
+            <option value="yuki">Yuki Nagato</option>
+            <option value="tsuruya">Tsuruya-san</option>
+            <option value="sasaki" selected="selected">Sasaki</option>
+          </select>
+        </dd>
+
+        <dt>Goods</dt>
+        <dd>
+          <label>
+            <input type="checkbox" value="y" name="user.goods.novels">Novels
+          </label>
+          <label>
+            <input type="checkbox" value="y" checked="checked" name="user.goods.tvseries">DVD or BD (TV Series)
+          </label>
+          <label>
+            <input type="checkbox" value="y" name="user.goods.movie">DVD or BD (Movie)
+          </label>
+        </dd>
+
+      </dl>
+
+      <p>
+        <input type="submit" name="_submit" value="Submit">
+        <input type="submit" name="_cancel" value="Cancel">
+      </p>
+
+    </form>

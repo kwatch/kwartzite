@@ -1,0 +1,37 @@
+###
+### $Release: $
+### $Copyright: copyright(c) 2010 kuwata-lab.com all rights reserved $
+### $License: MIT License $
+###
+
+task :default => :help
+
+task :help do
+  puts "help:"
+  puts "  rake main    # print output"
+  puts "  rake main2   # print output (auto-escaping)"
+end
+
+desc "create *_.rb from *.html "
+task :convert do
+  sh "rbkwartzite -c '%C_' -o '%C_.rb' *.html"
+end
+
+desc "demonstration"
+task :main => :convert do
+  sh "ruby main.rb"
+end
+
+desc "demonstration (auto-escaping)"
+task :main2 => :convert do
+  sh "ruby main.rb -e"
+end
+
+task :test => :convert do
+  sh "ruby main.rb > output.actual"
+  sh "diff -u output.expected output.actual"
+  rm "output.actual"
+end
+
+require 'rake/clean'
+CLEAN.include('*_.rb')

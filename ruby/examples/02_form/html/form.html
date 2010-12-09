@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+
+    <form action="" method="post" data-kwd="mark:user_form">
+
+      <dl>
+
+        <dt>Name</dt>
+        <dd>
+          <input type="text" name="user.name" value="" data-kwd="mark:user_name">
+        </dd>
+
+        <dt>Password</dt>
+        <dd>
+          <input type="password" name="user.password" value="" data-kwd="mark:user_password">
+        </dd>
+
+        <dt>Gender</dt>
+        <dd>
+          <label><input type="radio" name="user.gender" value="M" data-kwd="mark:user_gender_M">Man</label>
+          <label><input type="radio" name="user.gender" value="W" data-kwd="mark:user_gender_W">Woman</label>
+        </dd>
+
+        <dt>Favorite</dt>
+        <dd>
+          <select name="user.favorite">
+            <option>-</option>
+            <option value="nagaru" data-kwd="mark:user_favorite">Nagaru Tanigawa</option>
+          </select>
+        </dd>
+
+        <dt>Goods</dt>
+        <dd>
+          <label>
+            <input type="checkbox" name="user.goods.novels" value="y" data-kwd="mark:user_goods_novels">Novels
+          </label>
+          <label>
+            <input type="checkbox" name="user.goods.tvseries" value="y" data-kwd="mark:user_goods_tvseries">DVD or BD (TV Series)
+          </label>
+          <label>
+            <input type="checkbox" name="user.goods.movie" value="y" data-kwd="mark:user_goods_movie">DVD or BD (Movie)
+          </label>
+        </dd>
+
+      </dl>
+
+      <p>
+        <input type="submit" name="_submit" value="Submit">
+        <input type="submit" name="_cancel" value="Cancel">
+      </p>
+
+    </form>
+
+  </body>
+</html>
