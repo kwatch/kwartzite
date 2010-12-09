@@ -1,0 +1,17 @@
+###
+### $Release: $
+### $Copyright: copyright(c) 2010 kuwata-lab.com all rights reserved $
+### $License: MIT License $
+###
+
+
+task :default => :test
+
+desc "do test"
+task :test do
+  #Dir.glob("test/**/*_test.rb").each do |fname|
+  #  sh "ruby #{fname}"
+  #end
+  files = Dir.glob("test/**/*_test.rb")
+  sh "ruby -r #{files.join(' -r ')} -e nil"
+end
