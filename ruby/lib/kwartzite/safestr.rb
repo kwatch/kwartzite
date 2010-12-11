@@ -5,14 +5,13 @@
 ###
 
 
-class SafeStr < String
+unless defined?(SafeStr)
 
-  module Helper
-
-    def safe_str(value)
-      return SafeStr.new(value)
-    end
-
+  class SafeStr < String
   end
 
-end unless defined?(SafeStr)
+  def safe_str(value)
+    return SafeStr.new(value)
+  end
+
+end

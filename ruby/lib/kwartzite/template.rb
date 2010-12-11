@@ -12,7 +12,6 @@ module Kwartzite
 
 
   class Template
-    include SafeStr::Helper
 
     def [](name)
       #: get instance variable.
