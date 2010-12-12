@@ -5,7 +5,7 @@
 ###
 
 
-require 'kwartzite/safestr'
+require 'kwartzite/safe_str'
 
 
 module Kwartzite

@@ -5,7 +5,7 @@
 ###
 
 require 'kwartzite/template'
-require 'kwartzite/safestr'
+require 'kwartzite/safe_str'
 require 'kwartzite/util'
 
 
