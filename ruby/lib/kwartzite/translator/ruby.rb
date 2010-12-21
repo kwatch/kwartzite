@@ -15,13 +15,17 @@ module Kwartzite
   class RubyTranslator < Translator
     Translator.register('ruby', self)
 
+    DEFAULTS = Translator::DEFAULTS.dup.merge({
+      :baseclass => 'Kwartzite::HtmlTemplate',
+    })
+
     def translate(nodes, opts={})
-      opts = opts.merge(@opts)
+      opts = @opts.dup.merge(opts)
       filename = opts[:filename]
       #: accepts opts[:classname].
-      classname = Util.name_format(opts[:classname] || '%C_', filename)
+      classname = Util.name_format(opts[:classname], filename)
       #: accepts opts[:baseclass].
-      baseclass = Util.name_format(opts[:baseclass] || 'Kwartzite::HtmlTemplate', filename)
+      baseclass = Util.name_format(opts[:baseclass], filename)
       @buf = ""
       print_header(opts, filename, classname)
       @buf <<   "class #{classname} < #{baseclass}\n"

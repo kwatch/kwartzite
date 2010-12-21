@@ -15,12 +15,12 @@ module Kwartzite
   class Director
 
     DEFAULTS = {
-      :classname  => '%C_',
-      :encoding   => nil,
-      :baseclass  => 'Kwartzite::HtmlTemplate',
+      #:classname  => '%C_',
+      #:encoding   => nil,
+      #:baseclass  => nil,    #'Kwartzite::HtmlTemplate',
       :lang       => 'ruby',
       :parser     => 'text',
-      :escapefunc => 'escape',
+      #:escapefunc => nil,    #'escape',
       :outfile    => nil,
     }
 

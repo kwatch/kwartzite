@@ -10,12 +10,16 @@ module Kwartzite
 
   class Translator
 
-    ESCAPE_FUNCTION = 'escape'
+    DEFAULTS = {
+      :classname => '%C_',
+      :baseclass => nil,
+      :escapefunc => 'escape',
+    }
 
     def initialize(opts={})
       #: accepts opts[:escapefunc] (default is 'escape').
-      @opts = opts
-      @escapefunc = opts[:escapefunc] || ESCAPE_FUNCTION
+      @opts = self.class.const_get(:DEFAULTS).dup.merge(opts)
+      @escapefunc = opts[:escapefunc]
     end
 
     def translate(nodes, opts={})
