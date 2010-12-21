@@ -13,6 +13,7 @@ test_files = [
   "parser/text_test.rb",
   "translator_test.rb",
   "translator/ruby_test.rb",
+  "translator/python_test.rb",
   "director_test.rb",
   "template_test.rb",
   "html_test.rb",
