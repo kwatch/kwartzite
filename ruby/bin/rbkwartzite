@@ -8,4 +8,6 @@
 
 require 'kwartzite'
 require 'kwartzite/main'
+require 'kwartzite/translator/ruby'
+require 'kwartzite/translator/python'
 Kwartzite::Main.main()
