@@ -19,7 +19,7 @@ module Kwartzite
     def initialize(opts={})
       #: accepts opts[:escapefunc] (default is 'escape').
       @opts = self.class.const_get(:DEFAULTS).dup.merge(opts)
-      @escapefunc = opts[:escapefunc]
+      @escapefunc = @opts[:escapefunc]
     end
 
     def translate(nodes, opts={})
